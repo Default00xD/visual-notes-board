@@ -1,8 +1,9 @@
- "use client";
+"use client";
 
 import type { Json } from "@/types/database";
 import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
+import { motion } from "framer-motion";
 
 interface FolderContent {
   title?: string;
@@ -14,7 +15,7 @@ interface FolderBlockProps {
 }
 
 export function FolderBlock({ block }: FolderBlockProps) {
-  const { blocks, setOpenFolderId, updateBlockContent } = useBoardStore();
+  const { blocks, setOpenFolderId } = useBoardStore();
   const content = (block.content as FolderContent | null) ?? {};
   const nestedCount = blocks.filter(
     (b) => b.parentBlockId === block.id
@@ -24,36 +25,33 @@ export function FolderBlock({ block }: FolderBlockProps) {
     setOpenFolderId(block.id);
   };
 
-  const handleBlur: React.FocusEventHandler<HTMLInputElement> = (event) => {
-    const title = event.target.value;
-    void updateBlockContent({
-      id: block.id,
-      content: {
-        title
-      }
-    });
-  };
-
   return (
-    <button
+    <motion.button
       type="button"
       onClick={handleOpen}
-      className="flex h-full w-full flex-col items-start justify-between rounded-lg border border-dashed border-slate-300 bg-slate-50/90 px-3 py-2 text-left transition hover:border-sky-300 hover:bg-sky-50"
+      whileHover={{ scale: 1 }}
+      whileTap={{ scale: 0.98 }}
+      className="flex h-full w-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-600/50 bg-slate-800/50 px-4 py-3 text-center transition-all hover:border-primary/50 hover:bg-slate-800/70"
     >
-      <div className="space-y-1">
-        <input
-          defaultValue={content.title ?? "Folder"}
-          onBlur={handleBlur}
-          className="w-full border-none bg-transparent p-0 text-[13px] font-medium text-slate-800 outline-none"
-        />
-        <p className="text-[11px] text-slate-500">
-          {nestedCount} nested block{nestedCount === 1 ? "" : "s"}
-        </p>
+      <div
+        className="w-full px-1 text-center text-2xl font-bold tracking-widest text-slate-200 uppercase leading-tight overflow-hidden"
+        style={{
+          wordBreak: "break-word",
+          overflowWrap: "break-word",
+          maxHeight: "3.2em"
+        }}
+      >
+        {content.title?.trim() || "FOLDER"}
       </div>
-      <p className="mt-1 text-[10px] text-slate-400">
-        Click to open inner board
-      </p>
-    </button>
+      {nestedCount > 0 && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-2 text-xs text-slate-400"
+        >
+          {nestedCount} block{nestedCount === 1 ? "" : "s"}
+        </motion.p>
+      )}
+    </motion.button>
   );
 }
-

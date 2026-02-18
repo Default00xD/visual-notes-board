@@ -15,11 +15,11 @@ interface RootLayoutProps {
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="h-full">
       <body
         className={cn(
-          "min-h-screen bg-background text-foreground antialiased",
-          "flex flex-col"
+          "h-screen bg-background text-foreground antialiased",
+          "flex flex-col overflow-hidden"
         )}
       >
         <AppShell>{children}</AppShell>

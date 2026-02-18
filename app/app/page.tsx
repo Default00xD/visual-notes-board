@@ -19,7 +19,7 @@ export default async function AppPage() {
   const blocks = await getBlocksForBoard(supabase, board.id);
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col">
+    <div className="flex h-full flex-col">
       <BoardCanvasShell initialBoard={board} initialBlocks={blocks} />
     </div>
   );

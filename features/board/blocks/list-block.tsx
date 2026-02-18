@@ -4,6 +4,7 @@ import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 interface ListContent {
   items: string[];
@@ -45,43 +46,51 @@ export function ListBlock({ block }: ListBlockProps) {
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[11px] text-slate-500">
+      <div className="flex items-center justify-between text-[11px] text-slate-400">
         <span>List</span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-6 px-1 text-[11px]"
-          onClick={handleAdd}
-        >
-          + item
-        </Button>
+        <motion.div whileHover={{ scale: 1 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-1 text-[11px] text-slate-300 hover:text-white hover:bg-slate-700/50"
+            onClick={handleAdd}
+          >
+            + item
+          </Button>
+        </motion.div>
       </div>
-      <ol className="space-y-1 text-[12px] text-slate-700">
+      <ol className="space-y-1 text-[12px] text-slate-300">
         {items.map((item, index) => (
-          <li key={index} className="flex gap-1">
-            <span className="mt-1 text-[11px] text-slate-400">
+          <motion.li
+            key={index}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex gap-1"
+          >
+            <span className="mt-1 text-[11px] text-slate-500">
               {index + 1}.
             </span>
             <Input
               value={item}
               onChange={(event) => handleChange(index, event.target.value)}
               placeholder="List item..."
-              className="h-7 border-none bg-transparent px-0 text-[12px] shadow-none placeholder:text-slate-400 focus-visible:ring-0"
+              className="h-7 border-none bg-transparent px-0 text-[12px] text-slate-300 placeholder:text-slate-500 focus-visible:ring-0 focus:text-white"
             />
-          </li>
+          </motion.li>
         ))}
         {items.length === 0 && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1 }}
+            whileTap={{ scale: 0.95 }}
             type="button"
             onClick={handleAdd}
-            className="text-[12px] text-sky-600 underline-offset-2 hover:underline"
+            className="text-[12px] text-primary underline-offset-2 hover:underline"
           >
             Add first item
-          </button>
+          </motion.button>
         )}
       </ol>
     </div>
   );
 }
-

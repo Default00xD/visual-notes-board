@@ -34,19 +34,25 @@ export function LikesBlock({ block }: LikesBlockProps) {
   };
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-1">
+    <div className="flex h-full flex-col items-center justify-center gap-2">
       <motion.button
         type="button"
         onClick={handleLike}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-rose-500 text-white shadow-lg shadow-rose-500/40"
+        className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-500/90 text-white shadow-lg shadow-rose-500/40 border border-rose-400/50"
         whileTap={{ scale: 0.88 }}
-        whileHover={{ scale: 1.06 }}
-        transition={{ type: "spring", stiffness: 260, damping: 16 }}
+        whileHover={{ scale: 1, boxShadow: "0 0 20px rgba(244, 63, 94, 0.6)" }}
+        transition={{ type: "spring", stiffness: 300, damping: 20 }}
       >
-        <span className="text-lg">♥</span>
+        <span className="text-xl">♥</span>
       </motion.button>
-      <div className="text-xs font-medium text-rose-600">{count} likes</div>
+      <motion.div
+        key={count}
+        initial={{ scale: 1.2, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="text-sm font-semibold text-rose-400"
+      >
+        {count} like{count !== 1 ? "s" : ""}
+      </motion.div>
     </div>
   );
 }
-

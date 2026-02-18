@@ -37,8 +37,7 @@ export function TextBlock({ block }: TextBlockProps) {
       onChange={(event) => setValue(event.target.value)}
       onBlur={handleBlur}
       placeholder="Type your note..."
-      className="min-h-[60px] w-full resize-none border-0 bg-transparent p-0 text-[13px] leading-relaxed text-slate-800 outline-none placeholder:text-slate-400"
+      className="min-h-[60px] w-full resize-none border-0 bg-transparent p-0 text-[13px] leading-relaxed text-slate-200 outline-none placeholder:text-slate-500 focus:text-white transition-colors"
     />
   );
 }
-

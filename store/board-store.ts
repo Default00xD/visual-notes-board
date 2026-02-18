@@ -34,6 +34,13 @@ export interface BoardState {
   changeBlockColor: (input: { id: string; color: BlockColor }) => Promise<void>;
   deleteBlock: (id: string) => Promise<void>;
   bringToFront: (id: string) => Promise<void>;
+  moveBlockToFolder: (input: {
+    blockId: string;
+    folderId: string | null;
+    x?: number;
+    y?: number;
+  }) => Promise<void>;
+  saveAllChanges: () => Promise<void>;
 }
 
 export const useBoardStore = create<BoardState>((set, get) => ({
@@ -96,74 +103,30 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
   updateBlockPositionAndSize: async ({ id, x, y, width, height }) => {
     const { blocks } = get();
+    // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, x, y, width, height } : block
       )
     });
-
-    const response = await fetch(`/api/blocks/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ x, y, width, height })
-    });
-
-    if (!response.ok) {
-      // Revert optimistic update on error
-      set({ blocks });
-      // eslint-disable-next-line no-console
-      console.error("Failed to update block position/size");
-    }
   },
   updateBlockContent: async ({ id, content }) => {
     const { blocks } = get();
-    const previousBlocks = blocks;
+    // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, content } : block
       )
     });
-
-    const response = await fetch(`/api/blocks/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ content })
-    });
-
-    if (!response.ok) {
-      // Revert optimistic update on error
-      set({ blocks: previousBlocks });
-      // eslint-disable-next-line no-console
-      console.error("Failed to update block content");
-    }
   },
   changeBlockColor: async ({ id, color }) => {
     const { blocks } = get();
-    const previousBlocks = blocks;
+    // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, color } : block
       )
     });
-
-    const response = await fetch(`/api/blocks/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ color })
-    });
-
-    if (!response.ok) {
-      // Revert optimistic update on error
-      set({ blocks: previousBlocks });
-      // eslint-disable-next-line no-console
-      console.error("Failed to change block color");
-    }
   },
   deleteBlock: async (id) => {
     const { blocks, selectedBlockId } = get();
@@ -216,6 +179,82 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       set({ blocks: previousBlocks });
       // eslint-disable-next-line no-console
       console.error("Failed to bring block to front");
+    }
+  },
+  moveBlockToFolder: async ({ blockId, folderId, x, y }) => {
+    const { blocks } = get();
+    const previousBlocks = blocks;
+    
+    set({
+      blocks: blocks.map((block) =>
+        block.id === blockId
+          ? {
+              ...block,
+              parentBlockId: folderId,
+              ...(x !== undefined ? { x } : null),
+              ...(y !== undefined ? { y } : null)
+            }
+          : block
+      )
+    });
+
+    const response = await fetch(`/api/blocks/${blockId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        parentBlockId: folderId,
+        ...(x !== undefined ? { x } : null),
+        ...(y !== undefined ? { y } : null)
+      })
+    });
+
+    if (!response.ok) {
+      // Revert optimistic update on error
+      set({ blocks: previousBlocks });
+      // eslint-disable-next-line no-console
+      console.error("Failed to move block to folder");
+    }
+  },
+  saveAllChanges: async () => {
+    const { blocks } = get();
+    const errors: string[] = [];
+
+    // Save all blocks that have been modified
+    await Promise.all(
+      blocks.map(async (block) => {
+        try {
+          const response = await fetch(`/api/blocks/${block.id}`, {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              x: block.x,
+              y: block.y,
+              width: block.width,
+              height: block.height,
+              color: block.color,
+              content: block.content,
+              zIndex: block.zIndex,
+              parentBlockId: block.parentBlockId
+            })
+          });
+
+          if (!response.ok) {
+            errors.push(`Failed to save block ${block.id}`);
+          }
+        } catch (error) {
+          errors.push(`Error saving block ${block.id}: ${error}`);
+        }
+      })
+    );
+
+    if (errors.length > 0) {
+      // eslint-disable-next-line no-console
+      console.error("Some blocks failed to save:", errors);
+      throw new Error("Failed to save some changes");
     }
   }
 }));

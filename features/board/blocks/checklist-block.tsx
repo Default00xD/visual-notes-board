@@ -4,6 +4,7 @@ import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 interface ChecklistItem {
   id: string;
@@ -69,29 +70,33 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[11px] text-slate-500">
+      <div className="flex items-center justify-between text-[11px] text-slate-400">
         <span>Checklist</span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-6 px-1 text-[11px]"
-          onClick={handleAdd}
-        >
-          + item
-        </Button>
+        <motion.div whileHover={{ scale: 1 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-6 px-1 text-[11px] text-slate-300 hover:text-white hover:bg-slate-700/50"
+            onClick={handleAdd}
+          >
+            + item
+          </Button>
+        </motion.div>
       </div>
       <div className="space-y-1">
         {items.map((item) => (
-          <label
+          <motion.label
             key={item.id}
-            className="flex items-center gap-2 text-[12px] text-slate-700"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-2 text-[12px] text-slate-300"
           >
             <input
               type="checkbox"
               checked={item.checked}
               onChange={() => handleToggle(item.id)}
-              className="h-3 w-3 rounded border-slate-300 text-sky-500"
+              className="h-3.5 w-3.5 rounded border-slate-600 bg-slate-800 text-primary focus:ring-primary"
             />
             <Input
               value={item.text}
@@ -99,21 +104,22 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
                 handleChangeText(item.id, event.target.value)
               }
               placeholder="Task..."
-              className="h-7 border-none bg-transparent px-0 text-[12px] shadow-none placeholder:text-slate-400 focus-visible:ring-0"
+              className="h-7 border-none bg-transparent px-0 text-[12px] text-slate-300 placeholder:text-slate-500 focus-visible:ring-0 focus:text-white"
             />
-          </label>
+          </motion.label>
         ))}
         {items.length === 0 && (
-          <button
+          <motion.button
+            whileHover={{ scale: 1 }}
+            whileTap={{ scale: 0.95 }}
             type="button"
             onClick={handleAdd}
-            className="text-[12px] text-sky-600 underline-offset-2 hover:underline"
+            className="text-[12px] text-primary underline-offset-2 hover:underline"
           >
             Add first item
-          </button>
+          </motion.button>
         )}
       </div>
     </div>
   );
 }
-
