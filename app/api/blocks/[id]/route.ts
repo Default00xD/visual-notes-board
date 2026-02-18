@@ -13,21 +13,23 @@ async function ensureOwnership(
   id: string,
   userId: string
 ): Promise<boolean> {
+  // Get block's board_id
   const { data: blockData, error: blockError } = await supabase
     .from("blocks")
     .select("board_id")
     .eq("id", id)
-    .single();
+    .single<{ board_id: string }>();
 
-  if (blockError || !blockData) return false;
+  if (blockError || !blockData?.board_id) return false;
 
+  // Get board's user_id
   const { data: boardData, error: boardError } = await supabase
     .from("boards")
     .select("user_id")
     .eq("id", blockData.board_id)
-    .single();
+    .single<{ user_id: string }>();
 
-  if (boardError || !boardData) return false;
+  if (boardError || !boardData?.user_id) return false;
 
   return boardData.user_id === userId;
 }

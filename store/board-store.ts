@@ -102,59 +102,95 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       )
     });
 
-    await fetch(`/api/blocks/${id}`, {
+    const response = await fetch(`/api/blocks/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ x, y, width, height })
     });
+
+    if (!response.ok) {
+      // Revert optimistic update on error
+      set({ blocks });
+      // eslint-disable-next-line no-console
+      console.error("Failed to update block position/size");
+    }
   },
   updateBlockContent: async ({ id, content }) => {
     const { blocks } = get();
+    const previousBlocks = blocks;
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, content } : block
       )
     });
 
-    await fetch(`/api/blocks/${id}`, {
+    const response = await fetch(`/api/blocks/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ content })
     });
+
+    if (!response.ok) {
+      // Revert optimistic update on error
+      set({ blocks: previousBlocks });
+      // eslint-disable-next-line no-console
+      console.error("Failed to update block content");
+    }
   },
   changeBlockColor: async ({ id, color }) => {
     const { blocks } = get();
+    const previousBlocks = blocks;
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, color } : block
       )
     });
 
-    await fetch(`/api/blocks/${id}`, {
+    const response = await fetch(`/api/blocks/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ color })
     });
+
+    if (!response.ok) {
+      // Revert optimistic update on error
+      set({ blocks: previousBlocks });
+      // eslint-disable-next-line no-console
+      console.error("Failed to change block color");
+    }
   },
   deleteBlock: async (id) => {
     const { blocks, selectedBlockId } = get();
+    const previousBlocks = blocks;
+    const previousSelected = selectedBlockId;
     set({
       blocks: blocks.filter((block) => block.id !== id),
       selectedBlockId: selectedBlockId === id ? null : selectedBlockId
     });
 
-    await fetch(`/api/blocks/${id}`, {
+    const response = await fetch(`/api/blocks/${id}`, {
       method: "DELETE"
     });
+
+    if (!response.ok) {
+      // Revert optimistic update on error
+      set({
+        blocks: previousBlocks,
+        selectedBlockId: previousSelected
+      });
+      // eslint-disable-next-line no-console
+      console.error("Failed to delete block");
+    }
   },
   bringToFront: async (id) => {
     const { blocks } = get();
+    const previousBlocks = blocks;
     const maxZ = blocks.reduce(
       (acc, block) => (block.zIndex > acc ? block.zIndex : acc),
       0
@@ -167,13 +203,20 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       )
     });
 
-    await fetch(`/api/blocks/${id}`, {
+    const response = await fetch(`/api/blocks/${id}`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ zIndex: nextZ })
     });
+
+    if (!response.ok) {
+      // Revert optimistic update on error
+      set({ blocks: previousBlocks });
+      // eslint-disable-next-line no-console
+      console.error("Failed to bring block to front");
+    }
   }
 }));
 

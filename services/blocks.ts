@@ -36,8 +36,8 @@ export async function getBlocksForBoard(
   supabase: SupabaseClient<Database>,
   boardId: string
 ): Promise<BlockDto[]> {
-  const { data, error } = await supabase
-    .from("blocks")
+  const { data, error } = await (supabase
+    .from("blocks") as any)
     .select("*")
     .eq("board_id", boardId)
     .order("z_index", { ascending: true });
@@ -47,7 +47,7 @@ export async function getBlocksForBoard(
   }
 
   return (
-    data?.map((block) => ({
+    data?.map((block: Database["public"]["Tables"]["blocks"]["Row"]) => ({
       id: block.id,
       boardId: block.board_id,
       parentBlockId: block.parent_block_id,
@@ -81,8 +81,8 @@ export async function createBlock(
   supabase: SupabaseClient<Database>,
   payload: CreateBlockInput
 ): Promise<BlockDto> {
-  const { data, error } = await supabase
-    .from("blocks")
+  const { data, error } = (await (supabase
+    .from("blocks") as any)
     .insert({
       board_id: payload.boardId,
       parent_block_id: payload.parentBlockId ?? null,
@@ -96,7 +96,7 @@ export async function createBlock(
       z_index: payload.zIndex ?? 0
     })
     .select("*")
-    .single();
+    .single()) as { data: any; error: any };
 
   if (error || !data) {
     throw new Error(error?.message ?? "Failed to create block");
@@ -163,12 +163,12 @@ export async function updateBlock(
     updatePayload.parent_block_id = payload.fields.parentBlockId;
   }
 
-  const { data, error } = await supabase
-    .from("blocks")
+  const { data, error } = (await (supabase
+    .from("blocks") as any)
     .update(updatePayload)
     .eq("id", payload.id)
     .select("*")
-    .single();
+    .single()) as { data: any; error: any };
 
   if (error || !data) {
     throw new Error(error?.message ?? "Failed to update block");
@@ -194,7 +194,10 @@ export async function deleteBlock(
   supabase: SupabaseClient<Database>,
   id: string
 ): Promise<void> {
-  const { error } = await supabase.from("blocks").delete().eq("id", id);
+  const { error } = await (supabase
+    .from("blocks") as any)
+    .delete()
+    .eq("id", id);
 
   if (error) {
     throw new Error(error.message);

@@ -48,7 +48,7 @@ export async function POST(request: Request) {
     .from("boards")
     .select("id, user_id")
     .eq("id", boardId)
-    .single();
+    .single<{ id: string; user_id: string }>();
 
   if (boardError || !board || board.user_id !== user.id) {
     return NextResponse.json(
