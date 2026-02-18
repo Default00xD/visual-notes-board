@@ -1,5 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
+
+type SupabaseServerClient = ReturnType<typeof createSupabaseServerClient>;
 
 export interface BoardDto {
   id: string;
@@ -9,18 +11,21 @@ export interface BoardDto {
 }
 
 export async function getOrCreateDefaultBoard(
-  supabase: SupabaseClient<Database>,
+  supabase: SupabaseServerClient,
   userId: string
 ): Promise<BoardDto> {
-  const { data: existingBoards, error: selectError } = await supabase
-    .from("boards")
+  const { data: existingBoards, error: selectError } = (await (supabase
+    .from("boards") as any)
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: true })
-    .limit(1);
+    .limit(1)) as {
+    data: Database["public"]["Tables"]["boards"]["Row"][] | null;
+    error: unknown;
+  };
 
   if (selectError) {
-    throw new Error(selectError.message);
+    throw new Error((selectError as { message?: string }).message ?? "Failed to load boards");
   }
 
   if (existingBoards && existingBoards.length > 0) {
@@ -33,17 +38,22 @@ export async function getOrCreateDefaultBoard(
     };
   }
 
-  const { data: inserted, error: insertError } = await supabase
-    .from("boards")
+  const { data: inserted, error: insertError } = (await (supabase
+    .from("boards") as any)
     .insert({
       title: "My Visual Board",
       user_id: userId
     })
     .select("*")
-    .single();
+    .single()) as {
+    data: Database["public"]["Tables"]["boards"]["Row"] | null;
+    error: unknown;
+  };
 
   if (insertError || !inserted) {
-    throw new Error(insertError?.message ?? "Failed to create default board");
+    throw new Error(
+      (insertError as { message?: string })?.message ?? "Failed to create default board"
+    );
   }
 
   return {
@@ -55,17 +65,20 @@ export async function getOrCreateDefaultBoard(
 }
 
 export async function getBoardsForUser(
-  supabase: SupabaseClient<Database>,
+  supabase: SupabaseServerClient,
   userId: string
 ): Promise<BoardDto[]> {
-  const { data, error } = await supabase
-    .from("boards")
+  const { data, error } = (await (supabase
+    .from("boards") as any)
     .select("*")
     .eq("user_id", userId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })) as {
+    data: Database["public"]["Tables"]["boards"]["Row"][] | null;
+    error: unknown;
+  };
 
   if (error) {
-    throw new Error(error.message);
+    throw new Error((error as { message?: string }).message ?? "Failed to load boards");
   }
 
   return (

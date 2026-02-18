@@ -1,6 +1,7 @@
-"use client";
+ "use client";
 
 import { useEffect, useState } from "react";
+import type { Json } from "@/types/database";
 import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -10,6 +11,7 @@ import { Button } from "@/components/ui/button";
 interface ImageContent {
   url: string;
   caption?: string;
+  [key: string]: Json | undefined;
 }
 
 interface ImageBlockProps {

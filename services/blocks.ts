@@ -1,5 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database, Json } from "@/types/database";
+
+type SupabaseServerClient = ReturnType<typeof createSupabaseServerClient>;
 
 export type BlockType =
   | "text"
@@ -33,7 +35,7 @@ export interface BlockDto {
 }
 
 export async function getBlocksForBoard(
-  supabase: SupabaseClient<Database>,
+  supabase: SupabaseServerClient,
   boardId: string
 ): Promise<BlockDto[]> {
   const { data, error } = await (supabase
@@ -78,7 +80,7 @@ export interface CreateBlockInput {
 }
 
 export async function createBlock(
-  supabase: SupabaseClient<Database>,
+  supabase: SupabaseServerClient,
   payload: CreateBlockInput
 ): Promise<BlockDto> {
   const { data, error } = (await (supabase
@@ -133,7 +135,7 @@ export interface UpdateBlockInput {
 }
 
 export async function updateBlock(
-  supabase: SupabaseClient<Database>,
+  supabase: SupabaseServerClient,
   payload: UpdateBlockInput
 ): Promise<BlockDto> {
   const updatePayload: Database["public"]["Tables"]["blocks"]["Update"] = {};
@@ -191,7 +193,7 @@ export async function updateBlock(
 }
 
 export async function deleteBlock(
-  supabase: SupabaseClient<Database>,
+  supabase: SupabaseServerClient,
   id: string
 ): Promise<void> {
   const { error } = await (supabase

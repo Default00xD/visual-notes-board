@@ -60,10 +60,9 @@ export async function GET(request: Request) {
       (user_metadata.picture as string | undefined) ??
       null;
 
-    await supabase.from("app_users").upsert(
+    await (supabase.from("app_users") as any).upsert(
       {
         auth_user_id: authUserId,
-        telegram_id: null, // Not used for Google OAuth
         username,
         avatar,
         subscription_status: "free"

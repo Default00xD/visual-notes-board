@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createBlock } from "@/services/blocks";
+import { createBlock, type BlockType, type BlockColor } from "@/services/blocks";
 
 export async function POST(request: Request) {
   const supabase = createSupabaseServerClient();
@@ -33,13 +33,13 @@ export async function POST(request: Request) {
   } = body as {
     boardId: string;
     parentBlockId?: string | null;
-    type: string;
+    type: BlockType;
     x: number;
     y: number;
     width: number;
     height: number;
-    color: string;
-    content?: unknown;
+    color: BlockColor;
+    content?: import("@/types/database").Json;
     zIndex?: number;
   };
 

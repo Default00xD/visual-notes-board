@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
+import type { Json } from "@/types/database";
 import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
 import { motion } from "framer-motion";
 
 interface LikesContent {
   count: number;
+  [key: string]: Json | undefined;
 }
 
 interface LikesBlockProps {

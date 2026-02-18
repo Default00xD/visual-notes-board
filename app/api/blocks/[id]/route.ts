@@ -14,20 +14,26 @@ async function ensureOwnership(
   userId: string
 ): Promise<boolean> {
   // Get block's board_id
-  const { data: blockData, error: blockError } = await supabase
-    .from("blocks")
+  const { data: blockData, error: blockError } = (await (supabase
+    .from("blocks") as any)
     .select("board_id")
     .eq("id", id)
-    .single<{ board_id: string }>();
+    .single()) as {
+    data: { board_id: string } | null;
+    error: unknown;
+  };
 
   if (blockError || !blockData?.board_id) return false;
 
   // Get board's user_id
-  const { data: boardData, error: boardError } = await supabase
-    .from("boards")
+  const { data: boardData, error: boardError } = (await (supabase
+    .from("boards") as any)
     .select("user_id")
     .eq("id", blockData.board_id)
-    .single<{ user_id: string }>();
+    .single()) as {
+    data: { user_id: string } | null;
+    error: unknown;
+  };
 
   if (boardError || !boardData?.user_id) return false;
 
@@ -63,7 +69,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
   const body = await request.json();
 
-  const updated = await updateBlock(supabase, {
+  const updated = await (updateBlock as any)(supabase, {
     id,
     fields: body
   });

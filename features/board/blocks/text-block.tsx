@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import type { Json } from "@/types/database";
 import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
 import { TextareaAutosize } from "@/features/board/components/textarea-autosize";
 
 interface TextContent {
   text: string;
+  [key: string]: Json | undefined;
 }
 
 interface TextBlockProps {

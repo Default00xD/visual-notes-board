@@ -1,10 +1,12 @@
-"use client";
+ "use client";
 
+import type { Json } from "@/types/database";
 import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
 
 interface FolderContent {
   title?: string;
+  [key: string]: Json | undefined;
 }
 
 interface FolderBlockProps {

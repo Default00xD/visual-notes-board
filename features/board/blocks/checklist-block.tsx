@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { Json } from "@/types/database";
 import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ interface ChecklistItem {
   id: string;
   text: string;
   checked: boolean;
+  [key: string]: Json | undefined;
 }
 
 interface ChecklistContent {

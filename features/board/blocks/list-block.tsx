@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { Json } from "@/types/database";
 import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
 import { Input } from "@/components/ui/input";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 interface ListContent {
   items: string[];
+  [key: string]: Json | undefined;
 }
 
 interface ListBlockProps {
