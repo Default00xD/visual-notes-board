@@ -46,27 +46,24 @@ export async function GET(request: Request) {
 
   if (user) {
     // Ensure the app user exists and has subscription_status
-    const { id: authUserId, user_metadata } = user;
+    const { id: authUserId, user_metadata, email } = user;
 
-    const telegramId =
-      (user_metadata.provider_id as string | undefined) ??
-      (user_metadata.id as string | undefined) ??
-      null;
-
+    // Google OAuth provides: full_name, avatar_url, email
     const username =
-      (user_metadata.user_name as string | undefined) ??
-      (user_metadata.username as string | undefined) ??
+      (user_metadata.full_name as string | undefined) ??
+      (user_metadata.name as string | undefined) ??
+      email?.split("@")[0] ??
       null;
 
     const avatar =
       (user_metadata.avatar_url as string | undefined) ??
-      (user_metadata.photo_url as string | undefined) ??
+      (user_metadata.picture as string | undefined) ??
       null;
 
     await supabase.from("app_users").upsert(
       {
         auth_user_id: authUserId,
-        telegram_id: telegramId,
+        telegram_id: null, // Not used for Google OAuth
         username,
         avatar,
         subscription_status: "free"

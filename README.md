@@ -1,6 +1,6 @@
 # Visual Notes Board
 
-Visual, Miro-like notes board with nested folders, soft animations, Telegram auth via Supabase, and SaaS-ready architecture.
+Visual, Miro-like notes board with nested folders, soft animations, Google OAuth via Supabase, and SaaS-ready architecture.
 
 ## Stack
 
@@ -9,7 +9,7 @@ Visual, Miro-like notes board with nested folders, soft animations, Telegram aut
 - **Framer Motion** for soft spring animations
 - **Zustand** for client state
 - **Supabase** (PostgreSQL + Auth + Storage)
-- **Telegram OAuth** via Supabase
+- **Google OAuth** via Supabase
 
 ## Features
 
@@ -18,7 +18,7 @@ Visual, Miro-like notes board with nested folders, soft animations, Telegram aut
 - Block types: text, image, checklist, likes, list, folder
 - Unlimited nested blocks via `parent_block_id` (folder inner boards)
 - Soft transitions, hover effects, rounded cards, modern SaaS-style UI
-- Telegram login with Supabase, per-user boards/blocks isolation
+- Google login with Supabase, per-user boards/blocks isolation
 - JSON export of current board (`Export JSON` button)
 - Subscription-ready model with `subscription_status` on `app_users` and middleware hook
 
@@ -75,14 +75,21 @@ On Vercel, set the same variables in **Project → Settings → Environment Vari
        with check (auth.role() = 'authenticated');
      ```
 
-4. **Telegram OAuth provider**
+4. **Google OAuth provider**
 
-   - In Supabase project, go to **Authentication → Providers → Telegram**.
+   - In Supabase project, go to **Authentication → Providers → Google**.
    - Enable the provider.
    - Set callback URL:
      - For local dev: `http://localhost:3000/auth/callback`
      - For production (Vercel): `https://YOUR_DOMAIN/auth/callback`
-   - Fill in Telegram bot credentials (Bot token / App ID / App Hash) according to Supabase Telegram guide.
+   - Fill in Google OAuth credentials:
+     - Go to [Google Cloud Console](https://console.cloud.google.com/)
+     - Create a new project or select existing one
+     - Enable Google+ API
+     - Go to **Credentials → Create Credentials → OAuth 2.0 Client ID**
+     - Application type: **Web application**
+     - Authorized redirect URIs: Add your Supabase callback URL (found in Supabase → Authentication → URL Configuration)
+     - Copy **Client ID** and **Client Secret** to Supabase Google provider settings
 
 ## Local development
 
@@ -94,8 +101,10 @@ npm run dev
 The app is available at `http://localhost:3000`.
 
 - Opening `/` redirects you to `/app` or `/login` depending on auth state.
-- `/login` shows Telegram login; successful login redirects to `/app`.
+- `/login` shows Google login; successful login redirects to `/app`.
 - `/app` loads (or creates) the default board and all blocks for the current user.
+
+**Note:** Make sure to copy `.env.example` to `.env.local` and fill in your Supabase credentials before running locally.
 
 ## Deployment (Vercel + Supabase)
 
@@ -106,7 +115,7 @@ The app is available at `http://localhost:3000`.
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
-4. Ensure your Supabase Telegram provider has callback:
+4. Ensure your Supabase Google provider has callback:
 
    ```text
    https://YOUR_VERCEL_DOMAIN/auth/callback
@@ -114,7 +123,7 @@ The app is available at `http://localhost:3000`.
 
 5. Deploy. After deployment:
 
-   - Visiting the site should show `/login`, then redirect to `/app` after Telegram auth.
+   - Visiting the site should show `/login`, then redirect to `/app` after Google auth.
    - Boards/blocks are isolated per Supabase user.
 
 ## Future monetization hook

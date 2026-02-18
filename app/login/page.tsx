@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { TelegramLoginButton } from "@/features/auth/telegram-login-button";
+import { GoogleLoginButton } from "@/features/auth/google-login-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default async function LoginPage() {
@@ -24,10 +24,10 @@ export default async function LoginPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Войдите через Telegram, чтобы создать свою визуальную доску и
+            Войдите через Google, чтобы создать свою визуальную доску и
             организовать заметки в современном SaaS-интерфейсе.
           </p>
-          <TelegramLoginButton />
+          <GoogleLoginButton />
           <p className="text-[11px] text-muted-foreground">
             Авторизация и хранение данных выполняются через Supabase
             (PostgreSQL + Auth). В будущем будет добавлена подписочная модель

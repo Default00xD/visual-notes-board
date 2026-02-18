@@ -96,7 +96,6 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
           {scopedBlocks.map((block) => (
             <motion.div
               key={block.id}
-              layout
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
@@ -104,10 +103,6 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
                 type: "spring",
                 stiffness: 260,
                 damping: 24
-              }}
-              style={{
-                position: "absolute",
-                inset: 0
               }}
             >
               <BlockCard block={block} />

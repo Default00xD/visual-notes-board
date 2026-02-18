@@ -3,9 +3,9 @@
 import { useTransition } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { TelegramIcon } from "@/features/auth/telegram-icon";
+import { GoogleIcon } from "@/features/auth/google-icon";
 
-export function TelegramLoginButton() {
+export function GoogleLoginButton() {
   const [isPending, startTransition] = useTransition();
 
   const handleLogin = () => {
@@ -15,7 +15,7 @@ export function TelegramLoginButton() {
       const redirectTo = `${origin}/auth/callback`;
 
       await supabase.auth.signInWithOAuth({
-        provider: "telegram",
+        provider: "google",
         options: {
           redirectTo
         }
@@ -28,13 +28,12 @@ export function TelegramLoginButton() {
       type="button"
       variant="default"
       size="lg"
-      className="w-full gap-2 bg-[#229ED9] hover:bg-[#229ED9]/90"
+      className="w-full gap-2 bg-white text-slate-900 hover:bg-slate-50 border border-slate-300"
       onClick={handleLogin}
       disabled={isPending}
     >
-      <TelegramIcon className="h-4 w-4" />
-      {isPending ? "Перенаправление в Telegram…" : "Войти через Telegram"}
+      <GoogleIcon className="h-4 w-4" />
+      {isPending ? "Перенаправление в Google…" : "Войти через Google"}
     </Button>
   );
 }
-

@@ -6,7 +6,7 @@ import { AppShell } from "@/components/app-shell";
 
 export const metadata: Metadata = {
   title: "Visual Notes Board",
-  description: "Visual SaaS-grade notes board with nested blocks and Telegram login."
+  description: "Visual SaaS-grade notes board with nested blocks and Google OAuth login."
 };
 
 interface RootLayoutProps {

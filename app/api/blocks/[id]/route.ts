@@ -3,9 +3,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteBlock, updateBlock } from "@/services/blocks";
 
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 async function ensureOwnership(
@@ -13,21 +13,28 @@ async function ensureOwnership(
   id: string,
   userId: string
 ): Promise<boolean> {
-  const { data, error } = await supabase
+  const { data: blockData, error: blockError } = await supabase
     .from("blocks")
-    .select("id, board_id, boards!inner(user_id)")
+    .select("board_id")
     .eq("id", id)
     .single();
 
-  if (error || !data) return false;
+  if (blockError || !blockData) return false;
 
-  // @ts-expect-error - joined boards relation
-  return data.boards?.user_id === userId;
+  const { data: boardData, error: boardError } = await supabase
+    .from("boards")
+    .select("user_id")
+    .eq("id", blockData.board_id)
+    .single();
+
+  if (boardError || !boardData) return false;
+
+  return boardData.user_id === userId;
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {
   const supabase = createSupabaseServerClient();
-  const id = params.id;
+  const { id } = await params;
 
   const {
     data: { user }
@@ -64,7 +71,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
 export async function DELETE(_request: Request, { params }: RouteParams) {
   const supabase = createSupabaseServerClient();
-  const id = params.id;
+  const { id } = await params;
 
   const {
     data: { user }
