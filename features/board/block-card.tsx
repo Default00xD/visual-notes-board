@@ -16,8 +16,6 @@ import type { Json } from "@/types/database";
 import { Input } from "@/components/ui/input";
 import { BlockRenderer } from "@/features/board/block-renderer";
 import { ImageBlock, type ImageBlockHandle } from "@/features/board/blocks/image-block";
-import { BoardCanvas } from "@/features/board/board-canvas";
-import { X } from "lucide-react";
 
 interface BlockCardProps {
   block: BlockDto;
@@ -25,9 +23,9 @@ interface BlockCardProps {
 
 const GRID_SIZE = 50;
 
-// Snap value to nearest multiple of grid size
+// Snap value to nearest multiple of half grid size
 const snapToGrid = (value: number): number => {
-  return Math.round(value / GRID_SIZE) * GRID_SIZE;
+  return Math.round(value / (GRID_SIZE / 2)) * (GRID_SIZE / 2);
 };
 
 const COLOR_MAP: Record<BlockColor, string> = {
@@ -61,9 +59,7 @@ export function BlockCard({ block }: BlockCardProps) {
     bringToFront,
     moveBlockToFolder,
     blocks,
-    setDragState,
-    openFolderId,
-    setOpenFolderId
+    setDragState
   } = useBoardStore();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -94,10 +90,12 @@ export function BlockCard({ block }: BlockCardProps) {
     }
   }, [block.x, block.y, isDragging, isResizing, snapPos]);
 
-  // Animate to snapped position
+  // Animate to snapped position smoothly
   useEffect(() => {
     if (snapPos) {
+      // Update position with smooth transition
       setPos(snapPos);
+      // Clear snapPos after animation completes
       const timer = setTimeout(() => {
         setSnapPos(null);
       }, 300);
@@ -136,7 +134,7 @@ export function BlockCard({ block }: BlockCardProps) {
     
     console.log("[BlockCard] Drag stop - snapped position", { blockId: block.id, nextX, nextY, originalX: data.x, originalY: data.y });
 
-    // Show preview of snapped position
+    // Animate to snapped position smoothly
     setSnapPos({ x: nextX, y: nextY });
 
     // If dropped over a folder, move it into that folder instead of persisting position here.
@@ -185,6 +183,10 @@ export function BlockCard({ block }: BlockCardProps) {
   };
 
   const handleStartDrag = () => {
+    // Prevent dragging when resizing
+    if (isResizing) {
+      return;
+    }
     console.log("[BlockCard] Drag start", { blockId: block.id, currentPos: { x: block.x, y: block.y } });
     setIsDragging(true);
     setSelectedBlock(block.id);
@@ -296,8 +298,6 @@ export function BlockCard({ block }: BlockCardProps) {
   const colorDotClass = COLOR_DOT_MAP[block.color] ?? COLOR_DOT_MAP.dark;
   const isSelected = selectedBlockId === block.id;
   const isImage = block.type === "image";
-  const isFolder = block.type === "folder";
-  const isFolderOpen = openFolderId === block.id;
 
   const aspectRatio = useMemo(() => {
     if (block.type !== "image") return null;
@@ -308,8 +308,6 @@ export function BlockCard({ block }: BlockCardProps) {
 
   const displayWidth = snapSize?.width ?? previewSize?.width ?? block.width;
   const displayHeight = snapSize?.height ?? previewSize?.height ?? block.height;
-  const displayX = snapPos?.x ?? previewPos?.x ?? pos.x;
-  const displayY = snapPos?.y ?? previewPos?.y ?? pos.y;
 
   return (
     <>
@@ -330,12 +328,13 @@ export function BlockCard({ block }: BlockCardProps) {
       )}
     <Draggable
       nodeRef={nodeRef}
-      position={displayX !== pos.x || displayY !== pos.y ? { x: displayX, y: displayY } : (snapPos ?? pos)}
+      position={snapPos ?? pos}
       onStart={handleStartDrag}
       onDrag={handleDrag}
       onStop={handleStopDrag}
       handle={isImage ? undefined : ".drag-handle, .drag-surface"}
       cancel=".no-drag, input, textarea, button"
+      disabled={isResizing}
     >
       <div
         ref={nodeRef}
@@ -345,10 +344,7 @@ export function BlockCard({ block }: BlockCardProps) {
         }}
       >
         {/* motion is INSIDE the draggable node to avoid transform conflicts */}
-        <motion.div
-          whileHover={!isDragging && !isResizing ? { scale: 1 } : {}}
-          transition={{ duration: 0.18 }}
-        >
+        <div>
           <Resizable
             size={{
               width: displayWidth,
@@ -376,10 +372,9 @@ export function BlockCard({ block }: BlockCardProps) {
                     transition: "width 0.3s ease-out, height 0.3s ease-out"
                   }
                 : {}),
-              ...(isFolderOpen
+              ...(snapPos
                 ? {
-                    width: Math.max(displayWidth, snapToGrid(window.innerWidth * 0.6)),
-                    height: Math.max(displayHeight, snapToGrid(window.innerHeight * 0.6))
+                    transition: "transform 0.3s ease-out"
                   }
                 : {})
             }}
@@ -389,34 +384,9 @@ export function BlockCard({ block }: BlockCardProps) {
               isSelected
                 ? "ring-2 ring-primary shadow-2xl"
                 : "ring-0 hover:ring-1 hover:ring-neutral-700/50"
-            } ${isDragging ? "opacity-90" : ""} ${isFolderOpen ? "overflow-hidden" : ""}`}
+            } ${isDragging ? "opacity-90" : ""} focus-visible:ring-0`}
           >
-            {isFolderOpen ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2 }}
-                className="relative flex h-full w-full flex-col overflow-hidden"
-              >
-                <div className="flex items-center justify-between border-b border-neutral-800/50 bg-neutral-950/40 px-4 py-2">
-                  <span className="font-semibold text-neutral-100 text-sm">{title || "Folder"}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log("[BlockCard] Folder close button clicked", { blockId: block.id });
-                      setOpenFolderId(null);
-                    }}
-                    className="no-drag inline-flex h-7 w-7 items-center justify-center rounded-full text-neutral-300 transition-all hover:bg-neutral-800/50 hover:text-white"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="relative flex-1 overflow-hidden">
-                  <BoardCanvas parentBlockId={block.id} />
-                </div>
-              </motion.div>
-            ) : isImage ? (
+            {isImage ? (
               <div className="relative flex h-full w-full overflow-hidden rounded-xl">
                 {/* Drag surface under all elements */}
                 <div className="drag-surface absolute inset-0 z-0 cursor-move" />
@@ -424,20 +394,16 @@ export function BlockCard({ block }: BlockCardProps) {
                   <ImageBlock block={block} ref={imageRef} />
                   <button
                     type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log("[BlockCard] Image delete button clicked", { blockId: block.id });
-                      void deleteBlock(block.id)
-                        .then(() => {
-                          console.log("[BlockCard] Image delete completed", { blockId: block.id });
-                        })
-                        .catch((error) => {
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("[BlockCard] Image delete button clicked", { blockId: block.id });
+                        void deleteBlock(block.id).catch((error) => {
                           console.error("[BlockCard] Image delete failed", {
                             blockId: block.id,
                             error
                           });
                         });
-                    }}
+                      }}
                     className="no-drag absolute right-2 top-2 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-neutral-950/80 text-neutral-300 opacity-0 shadow-lg shadow-black/40 transition-all hover:bg-red-600/90 hover:text-white group-hover:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -526,7 +492,7 @@ export function BlockCard({ block }: BlockCardProps) {
                           ref={titleInputRef}
                           value={renameValue}
                           onChange={(e) => setRenameValue(e.target.value)}
-                          className="no-drag h-7 border-neutral-800/50 bg-neutral-900/40 px-2 py-1 text-sm text-neutral-100 focus-visible:ring-0 focus-visible:border-primary/50"
+                          className="no-drag h-7 border-neutral-800/50 bg-neutral-900/40 px-2 py-1 text-sm text-neutral-100 focus-visible:ring-0 focus-visible:outline-none focus-visible:border-primary/50"
                           onMouseDown={(e) => e.stopPropagation()}
                           onClick={(e) => e.stopPropagation()}
                           onBlur={() => {
@@ -584,7 +550,9 @@ export function BlockCard({ block }: BlockCardProps) {
                       onClick={(e) => {
                         e.stopPropagation();
                         console.log("[BlockCard] Delete button clicked", { blockId: block.id });
-                        void deleteBlock(block.id);
+                        void deleteBlock(block.id).catch((error) => {
+                          console.error("[BlockCard] Delete failed", { blockId: block.id, error });
+                        });
                       }}
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -603,7 +571,7 @@ export function BlockCard({ block }: BlockCardProps) {
               </>
             )}
           </Resizable>
-        </motion.div>
+        </div>
 
       </div>
     </Draggable>

@@ -21,25 +21,17 @@ interface BoardCanvasProps {
 const GRID_SIZE = 20;
 
 const snapToGrid = (value: number): number => {
-  return Math.round(value / GRID_SIZE) * GRID_SIZE;
+  return Math.round(value / (GRID_SIZE / 2)) * (GRID_SIZE / 2);
 };
 
 export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
-  const { currentBoard, blocks, openFolderId, closeFolder, openFolderStackMode, createBlock } =
+  const { currentBoard, blocks, createBlock } =
     useBoardStore();
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   const scopedBlocks = blocks.filter(
     (block) => block.parentBlockId === parentBlockId
   );
-  const renderBlocks =
-    openFolderId && openFolderStackMode && parentBlockId === openFolderId
-      ? scopedBlocks.map((b, index) => ({
-          ...b,
-          x: 20 + index * 50,
-          y: 20 + index * 50
-        }))
-      : scopedBlocks;
 
   const handleAddBlock = useCallback(
     (type: BlockType) => {
@@ -145,7 +137,7 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
               </motion.div>
             </div>
 
-            {renderBlocks.map((block) => (
+            {scopedBlocks.map((block) => (
               <motion.div
                 key={block.id}
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}

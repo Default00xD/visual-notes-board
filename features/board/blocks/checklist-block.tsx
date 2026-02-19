@@ -80,42 +80,49 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
     console.log("[ChecklistBlock] Change text - completed", { blockId: block.id, itemId: id });
   };
 
-  const tintByColor: Record<BlockColor, { rowHover: string; checkOn: string; checkBorder: string }> =
+  const tintByColor: Record<BlockColor, { rowHover: string; checkOn: string; checkBorder: string; checkIcon: string }> =
     {
       dark: {
         rowHover: "hover:bg-neutral-800/70",
-        checkOn: "bg-neutral-200 text-neutral-950",
-        checkBorder: "border-neutral-600"
+        checkOn: "bg-white",
+        checkBorder: "border-neutral-600",
+        checkIcon: "text-neutral-600"
       },
       slate: {
         rowHover: "hover:bg-slate-700/30",
-        checkOn: "bg-slate-200 text-slate-950",
-        checkBorder: "border-slate-600"
+        checkOn: "bg-white",
+        checkBorder: "border-slate-600",
+        checkIcon: "text-slate-600"
       },
       amber: {
         rowHover: "hover:bg-amber-500/10",
-        checkOn: "bg-amber-200 text-amber-950",
-        checkBorder: "border-amber-600/70"
+        checkOn: "bg-white",
+        checkBorder: "border-amber-600/70",
+        checkIcon: "text-amber-600"
       },
       emerald: {
         rowHover: "hover:bg-emerald-500/10",
-        checkOn: "bg-emerald-200 text-emerald-950",
-        checkBorder: "border-emerald-600/70"
+        checkOn: "bg-white",
+        checkBorder: "border-emerald-600/70",
+        checkIcon: "text-emerald-600"
       },
       sky: {
         rowHover: "hover:bg-sky-500/10",
-        checkOn: "bg-sky-200 text-sky-950",
-        checkBorder: "border-sky-600/70"
+        checkOn: "bg-white",
+        checkBorder: "border-sky-600/70",
+        checkIcon: "text-sky-600"
       },
       violet: {
         rowHover: "hover:bg-violet-500/10",
-        checkOn: "bg-violet-200 text-violet-950",
-        checkBorder: "border-violet-600/70"
+        checkOn: "bg-white",
+        checkBorder: "border-violet-600/70",
+        checkIcon: "text-violet-600"
       },
       rose: {
         rowHover: "hover:bg-rose-500/10",
-        checkOn: "bg-rose-200 text-rose-950",
-        checkBorder: "border-rose-600/70"
+        checkOn: "bg-white",
+        checkBorder: "border-rose-600/70",
+        checkIcon: "text-rose-600"
       }
     };
 
@@ -129,7 +136,7 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
             key={item.id}
             initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
-            className={`group flex items-center gap-2 rounded-md px-1 py-0.5 text-[12px] text-neutral-200 transition-colors ${tint.rowHover}`}
+            className={`group flex items-center gap-2 rounded-md px-1 py-0.5 text-[14px] text-neutral-200 transition-colors ${tint.rowHover}`}
           >
             <span className="relative inline-flex items-center justify-center">
               <input
@@ -139,12 +146,12 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
                 className="peer sr-only"
               />
               <span
-                className={`inline-flex h-4 w-4 items-center justify-center rounded-[6px] border bg-neutral-950/30 shadow-sm transition-all ${tint.checkBorder} peer-focus-visible:ring-2 peer-focus-visible:ring-primary/70 ${
-                  item.checked ? tint.checkOn : "text-transparent"
+                className={`inline-flex h-5 w-5 items-center justify-center rounded-full border-2 shadow-sm transition-all ${tint.checkBorder} peer-focus-visible:ring-0 ${
+                  item.checked ? tint.checkOn : "bg-transparent"
                 }`}
               >
                 <Check
-                  className={`h-3 w-3 transition-opacity ${item.checked ? "opacity-100" : "opacity-0"}`}
+                  className={`h-3.5 w-3.5 transition-opacity ${item.checked ? `opacity-100 ${tint.checkIcon}` : "opacity-0"}`}
                 />
               </span>
             </span>
@@ -154,7 +161,7 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
                 handleChangeText(item.id, event.target.value)
               }
               placeholder="Новая задача"
-              className={`h-7 border-none bg-transparent px-0 text-[12px] shadow-none placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:outline-none ${
+              className={`h-7 border-none bg-transparent px-0 text-[14px] shadow-none placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:outline-none ${
                 item.checked ? "text-neutral-300" : "text-neutral-200"
               }`}
             />
@@ -165,7 +172,7 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
           whileTap={{ scale: 0.97 }}
           type="button"
           onClick={handleAdd}
-          className="flex items-center gap-2 px-1 py-1 text-[12px] text-neutral-400 transition-colors hover:text-primary"
+          className="flex items-center gap-2 px-1 py-1 text-[14px] text-neutral-400 transition-colors hover:text-primary"
         >
           <span className="flex h-4 w-4 items-center justify-center rounded-full border border-neutral-600 text-[11px]">
             +

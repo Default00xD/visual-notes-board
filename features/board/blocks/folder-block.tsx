@@ -15,12 +15,11 @@ interface FolderBlockProps {
 }
 
 export function FolderBlock({ block }: FolderBlockProps) {
-  const { blocks, dragState, setOpenFolderId, openFolderId } = useBoardStore();
+  const { blocks, dragState } = useBoardStore();
   const content = (block.content as FolderContent | null) ?? {};
   const nestedCount = blocks.filter(
     (b) => b.parentBlockId === block.id
   ).length;
-  const isOpen = openFolderId === block.id;
 
   const isDropTarget = (() => {
     if (!dragState) return false;
@@ -34,17 +33,7 @@ export function FolderBlock({ block }: FolderBlockProps) {
   })();
 
   return (
-    <motion.button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        console.log("[FolderBlock] Open clicked", { blockId: block.id, folderTitle: content.title, isOpen });
-        if (isOpen) {
-          setOpenFolderId(null);
-        } else {
-          setOpenFolderId(block.id);
-        }
-      }}
+    <motion.div
       animate={
         isDropTarget
           ? {
@@ -52,7 +41,6 @@ export function FolderBlock({ block }: FolderBlockProps) {
             }
           : { scale: 1 }
       }
-      whileTap={{ scale: 0.98 }}
       className={`flex h-full w-full flex-col items-center justify-center rounded-lg border border-neutral-700/60 bg-neutral-950/20 px-4 py-3 text-center transition-all ${
         isDropTarget ? "border-neutral-300/40 bg-neutral-900/40 shadow-[0_0_40px_rgba(255,255,255,0.08)]" : "hover:bg-neutral-900/30"
       }`}
@@ -76,6 +64,6 @@ export function FolderBlock({ block }: FolderBlockProps) {
           {nestedCount} block{nestedCount === 1 ? "" : "s"}
         </motion.p>
       )}
-    </motion.button>
+    </motion.div>
   );
 }

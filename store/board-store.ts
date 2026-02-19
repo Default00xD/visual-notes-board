@@ -12,14 +12,8 @@ import type { BoardDto } from "@/services/boards";
 export interface BoardState {
   currentBoard: BoardDto | null;
   blocks: BlockDto[];
+  deletedBlockIds: string[];
   selectedBlockId: string | null;
-  openFolderId: string | null;
-  openFolderOrigin: { top: number; left: number; width: number; height: number } | null;
-  openFolderStackMode: boolean;
-  folderContainerRects: Record<
-    string,
-    { top: number; left: number; width: number; height: number }
-  >;
   dragState: {
     blockId: string;
     parentBlockId: string | null;
@@ -31,16 +25,6 @@ export interface BoardState {
   hasUnsavedChanges: boolean;
   setInitialData: (board: BoardDto, blocks: BlockDto[]) => void;
   setSelectedBlock: (id: string | null) => void;
-  setOpenFolderId: (id: string | null) => void;
-  openFolderFromRect: (input: {
-    folderId: string;
-    origin: { top: number; left: number; width: number; height: number };
-  }) => void;
-  closeFolder: () => void;
-  setFolderContainerRect: (input: {
-    folderId: string;
-    rect: { top: number; left: number; width: number; height: number };
-  }) => void;
   setDragState: (next: BoardState["dragState"]) => void;
   createBlock: (input: {
     type: BlockType;
@@ -71,11 +55,8 @@ export interface BoardState {
 export const useBoardStore = create<BoardState>((set, get) => ({
   currentBoard: null,
   blocks: [],
+  deletedBlockIds: [],
   selectedBlockId: null,
-  openFolderId: null,
-  openFolderOrigin: null,
-  openFolderStackMode: false,
-  folderContainerRects: {},
   dragState: null,
   hasUnsavedChanges: false,
   setInitialData: (board, blocks) => {
@@ -83,6 +64,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     set({
       currentBoard: board,
       blocks,
+      deletedBlockIds: [],
       hasUnsavedChanges: false
     });
     console.log("[Store] setInitialData - completed", { boardId: board.id });
@@ -91,35 +73,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     set({
       selectedBlockId: id
     }),
-  setOpenFolderId: (id) =>
-    set({
-      openFolderId: id
-    }),
-  openFolderFromRect: ({ folderId, origin }) => {
-    console.log("[Store] openFolderFromRect", { folderId, origin });
-    set({
-      openFolderId: folderId,
-      openFolderOrigin: origin,
-      openFolderStackMode: true
-    });
-  },
-  closeFolder: () => {
-    const { openFolderId } = get();
-    console.log("[Store] closeFolder", { openFolderId });
-    set({
-      openFolderId: null,
-      openFolderOrigin: null,
-      openFolderStackMode: false
-    });
-  },
-  setFolderContainerRect: ({ folderId, rect }) => {
-    set((state) => ({
-      folderContainerRects: {
-        ...state.folderContainerRects,
-        [folderId]: rect
-      }
-    }));
-  },
   setDragState: (next) => set({ dragState: next }),
   createBlock: async ({ type, parentBlockId = null, x, y }) => {
     console.log("[Store] createBlock - start", { type, parentBlockId, x, y });
@@ -185,17 +138,14 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
   updateBlockPositionAndSize: async ({ id, x, y, width, height }) => {
     console.log("[Store] updateBlockPositionAndSize - start", { id, x, y, width, height });
-    const { blocks, openFolderId } = get();
+    const { blocks } = get();
     const oldBlock = blocks.find((b) => b.id === id);
     // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, x, y, width, height } : block
       ),
-      hasUnsavedChanges: true,
-      ...(openFolderId && oldBlock?.parentBlockId === openFolderId
-        ? { openFolderStackMode: false }
-        : null)
+      hasUnsavedChanges: true
     });
     console.log("[Store] updateBlockPositionAndSize - state updated", { 
       id, 
@@ -207,17 +157,14 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
   updateBlockContent: async ({ id, content }) => {
     console.log("[Store] updateBlockContent - start", { id, content });
-    const { blocks, openFolderId } = get();
+    const { blocks } = get();
     const oldBlock = blocks.find((b) => b.id === id);
     // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, content } : block
       ),
-      hasUnsavedChanges: true,
-      ...(openFolderId && oldBlock?.parentBlockId === openFolderId
-        ? { openFolderStackMode: false }
-        : null)
+      hasUnsavedChanges: true
     });
     console.log("[Store] updateBlockContent - state updated", { 
       id, 
@@ -227,68 +174,30 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
   changeBlockColor: async ({ id, color }) => {
     console.log("[Store] changeBlockColor - start", { id, color });
-    const { blocks, openFolderId } = get();
+    const { blocks } = get();
     const oldBlock = blocks.find((b) => b.id === id);
     // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, color } : block
       ),
-      hasUnsavedChanges: true,
-      ...(openFolderId && oldBlock?.parentBlockId === openFolderId
-        ? { openFolderStackMode: false }
-        : null)
+      hasUnsavedChanges: true
     });
     console.log("[Store] changeBlockColor - state updated", { id, oldColor: oldBlock?.color, newColor: color });
   },
   deleteBlock: async (id) => {
     console.log("[Store] deleteBlock - start", { id });
-    const { blocks, selectedBlockId, openFolderId } = get();
-    const previousBlocks = blocks;
-    const previousSelected = selectedBlockId;
+    const { blocks, selectedBlockId, deletedBlockIds } = get();
     const blockToDelete = blocks.find((b) => b.id === id);
     
-    // Optimistically remove from UI immediately
+    // Only update local state, don't save to server yet
     set({
       blocks: blocks.filter((block) => block.id !== id),
+      deletedBlockIds: [...deletedBlockIds, id],
       selectedBlockId: selectedBlockId === id ? null : selectedBlockId,
-      ...(openFolderId && blockToDelete?.parentBlockId === openFolderId
-        ? { openFolderStackMode: false }
-        : null)
+      hasUnsavedChanges: true
     });
-    console.log("[Store] deleteBlock - optimistic update applied", { id, blockToDelete });
-
-    console.log("[Store] deleteBlock - sending request", { id });
-    try {
-      const response = await fetch(`/api/blocks/${id}`, {
-        method: "DELETE"
-      });
-
-      if (!response.ok) {
-        console.error("[Store] deleteBlock - request failed", { id, status: response.status, statusText: response.statusText });
-        // Revert optimistic update on error
-        set({
-          blocks: previousBlocks,
-          selectedBlockId: previousSelected,
-          hasUnsavedChanges: true
-        });
-        console.log("[Store] deleteBlock - reverted optimistic update", { id });
-        throw new Error(`Failed to delete block: ${response.statusText}`);
-      } else {
-        console.log("[Store] deleteBlock - completed successfully", { id });
-        // Mark as saved since deletion was persisted
-        set({ hasUnsavedChanges: false });
-      }
-    } catch (error) {
-      console.error("[Store] deleteBlock - error", { id, error });
-      // Revert on any error
-      set({
-        blocks: previousBlocks,
-        selectedBlockId: previousSelected,
-        hasUnsavedChanges: true
-      });
-      throw error;
-    }
+    console.log("[Store] deleteBlock - local state updated", { id, blockToDelete });
   },
   bringToFront: async (id) => {
     console.log("[Store] bringToFront - start", { id });
@@ -329,10 +238,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
   moveBlockToFolder: async ({ blockId, folderId, x, y }) => {
     console.log("[Store] moveBlockToFolder - start", { blockId, folderId, x, y });
-    const { blocks, openFolderId } = get();
-    const previousBlocks = blocks;
+    const { blocks } = get();
     const oldBlock = blocks.find((b) => b.id === blockId);
     
+    // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
         block.id === blockId
@@ -344,12 +253,9 @@ export const useBoardStore = create<BoardState>((set, get) => ({
             }
           : block
       ),
-      hasUnsavedChanges: true,
-      ...(openFolderId && oldBlock?.parentBlockId === openFolderId
-        ? { openFolderStackMode: false }
-        : null)
+      hasUnsavedChanges: true
     });
-    console.log("[Store] moveBlockToFolder - optimistic update applied", { 
+    console.log("[Store] moveBlockToFolder - state updated", { 
       blockId, 
       folderId, 
       oldParent: oldBlock?.parentBlockId,
@@ -357,32 +263,33 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       oldPos: oldBlock ? { x: oldBlock.x, y: oldBlock.y } : null,
       newPos: { x, y }
     });
-
-    const response = await fetch(`/api/blocks/${blockId}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        parentBlockId: folderId,
-        ...(x !== undefined ? { x } : null),
-        ...(y !== undefined ? { y } : null)
-      })
-    });
-
-    if (!response.ok) {
-      console.error("[Store] moveBlockToFolder - request failed", { blockId, folderId, status: response.status, statusText: response.statusText });
-      // Revert optimistic update on error
-      set({ blocks: previousBlocks });
-      console.log("[Store] moveBlockToFolder - reverted optimistic update", { blockId, folderId });
-    } else {
-      console.log("[Store] moveBlockToFolder - completed successfully", { blockId, folderId });
-    }
   },
   saveAllChanges: async () => {
-    const { blocks } = get();
-    console.log("[Store] saveAllChanges - start", { blocksCount: blocks.length });
+    const { blocks, deletedBlockIds } = get();
+    console.log("[Store] saveAllChanges - start", { blocksCount: blocks.length, deletedCount: deletedBlockIds.length });
     const errors: string[] = [];
+
+    // Delete all blocks that have been marked for deletion
+    await Promise.all(
+      deletedBlockIds.map(async (id) => {
+        try {
+          console.log("[Store] saveAllChanges - deleting block", { blockId: id });
+          const response = await fetch(`/api/blocks/${id}`, {
+            method: "DELETE"
+          });
+
+          if (!response.ok) {
+            console.error("[Store] saveAllChanges - block delete failed", { blockId: id, status: response.status });
+            errors.push(`Failed to delete block ${id}`);
+          } else {
+            console.log("[Store] saveAllChanges - block deleted", { blockId: id });
+          }
+        } catch (error) {
+          console.error("[Store] saveAllChanges - block delete error", { blockId: id, error });
+          errors.push(`Error deleting block ${id}: ${error}`);
+        }
+      })
+    );
 
     // Save all blocks that have been modified
     await Promise.all(
@@ -420,12 +327,12 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     );
 
     if (errors.length > 0) {
-      console.error("[Store] saveAllChanges - some blocks failed", { errors, totalBlocks: blocks.length, failedCount: errors.length });
+      console.error("[Store] saveAllChanges - some operations failed", { errors, totalBlocks: blocks.length, deletedCount: deletedBlockIds.length, failedCount: errors.length });
       throw new Error("Failed to save some changes");
     } else {
-      console.log("[Store] saveAllChanges - all blocks saved successfully", { blocksCount: blocks.length });
-      set({ hasUnsavedChanges: false });
-      console.log("[Store] saveAllChanges - hasUnsavedChanges set to false");
+      console.log("[Store] saveAllChanges - all operations completed successfully", { blocksCount: blocks.length, deletedCount: deletedBlockIds.length });
+      set({ hasUnsavedChanges: false, deletedBlockIds: [] });
+      console.log("[Store] saveAllChanges - hasUnsavedChanges set to false, deletedBlockIds cleared");
     }
   }
 }));
