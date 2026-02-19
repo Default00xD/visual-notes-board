@@ -65,8 +65,11 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const { currentBoard, blocks } = get();
     if (!currentBoard) return;
 
-    const width = 260;
-    const height = 160;
+    const GRID_SIZE = 20;
+    const snapToGrid = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE;
+    
+    const width = snapToGrid(260);
+    const height = snapToGrid(160);
 
     const payload = {
       boardId: currentBoard.id,
