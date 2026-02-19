@@ -27,7 +27,6 @@ export function AppShell({ children }: AppShellProps) {
     try {
       await saveAllChanges();
       console.log("[AppShell] Save operation completed successfully");
-      setHasUnsavedChanges(false);
     } catch (error) {
       console.error("[AppShell] Save operation failed", error);
     } finally {
