@@ -162,7 +162,15 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
-        block.id === id ? { ...block, content } : block
+        block.id === id
+  ? {
+      ...block,
+      content: {
+        ...((block.content ?? {}) as Record<string, any>),
+        ...(content as Record<string, any>)
+      }
+    }
+  : block
       ),
       hasUnsavedChanges: true
     });
@@ -307,6 +315,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
               width: block.width,
               height: block.height,
               color: block.color,
+              //title: block.title,
               content: block.content,
               zIndex: block.zIndex,
               parentBlockId: block.parentBlockId
