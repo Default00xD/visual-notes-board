@@ -14,10 +14,34 @@ export interface BoardState {
   blocks: BlockDto[];
   selectedBlockId: string | null;
   openFolderId: string | null;
+  openFolderOrigin: { top: number; left: number; width: number; height: number } | null;
+  openFolderStackMode: boolean;
+  folderContainerRects: Record<
+    string,
+    { top: number; left: number; width: number; height: number }
+  >;
+  dragState: {
+    blockId: string;
+    parentBlockId: string | null;
+    centerX: number;
+    centerY: number;
+    width: number;
+    height: number;
+  } | null;
   hasUnsavedChanges: boolean;
   setInitialData: (board: BoardDto, blocks: BlockDto[]) => void;
   setSelectedBlock: (id: string | null) => void;
   setOpenFolderId: (id: string | null) => void;
+  openFolderFromRect: (input: {
+    folderId: string;
+    origin: { top: number; left: number; width: number; height: number };
+  }) => void;
+  closeFolder: () => void;
+  setFolderContainerRect: (input: {
+    folderId: string;
+    rect: { top: number; left: number; width: number; height: number };
+  }) => void;
+  setDragState: (next: BoardState["dragState"]) => void;
   createBlock: (input: {
     type: BlockType;
     parentBlockId?: string | null;
@@ -49,6 +73,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   blocks: [],
   selectedBlockId: null,
   openFolderId: null,
+  openFolderOrigin: null,
+  openFolderStackMode: false,
+  folderContainerRects: {},
+  dragState: null,
   hasUnsavedChanges: false,
   setInitialData: (board, blocks) => {
     console.log("[Store] setInitialData", { boardId: board.id, blocksCount: blocks.length });
@@ -67,6 +95,32 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     set({
       openFolderId: id
     }),
+  openFolderFromRect: ({ folderId, origin }) => {
+    console.log("[Store] openFolderFromRect", { folderId, origin });
+    set({
+      openFolderId: folderId,
+      openFolderOrigin: origin,
+      openFolderStackMode: true
+    });
+  },
+  closeFolder: () => {
+    const { openFolderId } = get();
+    console.log("[Store] closeFolder", { openFolderId });
+    set({
+      openFolderId: null,
+      openFolderOrigin: null,
+      openFolderStackMode: false
+    });
+  },
+  setFolderContainerRect: ({ folderId, rect }) => {
+    set((state) => ({
+      folderContainerRects: {
+        ...state.folderContainerRects,
+        [folderId]: rect
+      }
+    }));
+  },
+  setDragState: (next) => set({ dragState: next }),
   createBlock: async ({ type, parentBlockId = null, x, y }) => {
     console.log("[Store] createBlock - start", { type, parentBlockId, x, y });
     const { currentBoard, blocks } = get();
@@ -131,14 +185,17 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
   updateBlockPositionAndSize: async ({ id, x, y, width, height }) => {
     console.log("[Store] updateBlockPositionAndSize - start", { id, x, y, width, height });
-    const { blocks } = get();
+    const { blocks, openFolderId } = get();
     const oldBlock = blocks.find((b) => b.id === id);
     // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, x, y, width, height } : block
       ),
-      hasUnsavedChanges: true
+      hasUnsavedChanges: true,
+      ...(openFolderId && oldBlock?.parentBlockId === openFolderId
+        ? { openFolderStackMode: false }
+        : null)
     });
     console.log("[Store] updateBlockPositionAndSize - state updated", { 
       id, 
@@ -150,14 +207,17 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
   updateBlockContent: async ({ id, content }) => {
     console.log("[Store] updateBlockContent - start", { id, content });
-    const { blocks } = get();
+    const { blocks, openFolderId } = get();
     const oldBlock = blocks.find((b) => b.id === id);
     // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, content } : block
       ),
-      hasUnsavedChanges: true
+      hasUnsavedChanges: true,
+      ...(openFolderId && oldBlock?.parentBlockId === openFolderId
+        ? { openFolderStackMode: false }
+        : null)
     });
     console.log("[Store] updateBlockContent - state updated", { 
       id, 
@@ -167,27 +227,33 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
   changeBlockColor: async ({ id, color }) => {
     console.log("[Store] changeBlockColor - start", { id, color });
-    const { blocks } = get();
+    const { blocks, openFolderId } = get();
     const oldBlock = blocks.find((b) => b.id === id);
     // Only update local state, don't save to server yet
     set({
       blocks: blocks.map((block) =>
         block.id === id ? { ...block, color } : block
       ),
-      hasUnsavedChanges: true
+      hasUnsavedChanges: true,
+      ...(openFolderId && oldBlock?.parentBlockId === openFolderId
+        ? { openFolderStackMode: false }
+        : null)
     });
     console.log("[Store] changeBlockColor - state updated", { id, oldColor: oldBlock?.color, newColor: color });
   },
   deleteBlock: async (id) => {
     console.log("[Store] deleteBlock - start", { id });
-    const { blocks, selectedBlockId } = get();
+    const { blocks, selectedBlockId, openFolderId } = get();
     const previousBlocks = blocks;
     const previousSelected = selectedBlockId;
     const blockToDelete = blocks.find((b) => b.id === id);
     set({
       blocks: blocks.filter((block) => block.id !== id),
       selectedBlockId: selectedBlockId === id ? null : selectedBlockId,
-      hasUnsavedChanges: true
+      hasUnsavedChanges: true,
+      ...(openFolderId && blockToDelete?.parentBlockId === openFolderId
+        ? { openFolderStackMode: false }
+        : null)
     });
     console.log("[Store] deleteBlock - optimistic update applied", { id, blockToDelete });
 
@@ -247,7 +313,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   },
   moveBlockToFolder: async ({ blockId, folderId, x, y }) => {
     console.log("[Store] moveBlockToFolder - start", { blockId, folderId, x, y });
-    const { blocks } = get();
+    const { blocks, openFolderId } = get();
     const previousBlocks = blocks;
     const oldBlock = blocks.find((b) => b.id === blockId);
     
@@ -262,7 +328,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
             }
           : block
       ),
-      hasUnsavedChanges: true
+      hasUnsavedChanges: true,
+      ...(openFolderId && oldBlock?.parentBlockId === openFolderId
+        ? { openFolderStackMode: false }
+        : null)
     });
     console.log("[Store] moveBlockToFolder - optimistic update applied", { 
       blockId, 

@@ -26,13 +26,21 @@ const snapToGrid = (value: number): number => {
 };
 
 export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
-  const { currentBoard, blocks, openFolderId, setOpenFolderId, createBlock } =
+  const { currentBoard, blocks, openFolderId, closeFolder, openFolderStackMode, createBlock } =
     useBoardStore();
   const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   const scopedBlocks = blocks.filter(
     (block) => block.parentBlockId === parentBlockId
   );
+  const renderBlocks =
+    openFolderId && openFolderStackMode && parentBlockId === openFolderId
+      ? scopedBlocks.map((b, index) => ({
+          ...b,
+          x: 20 + index * 50,
+          y: 20 + index * 50
+        }))
+      : scopedBlocks;
 
   const handleAddBlock = useCallback(
     (type: BlockType) => {
@@ -64,81 +72,81 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
 
           <div className="relative z-10 h-full w-full">
             <div className="absolute inset-x-0 bottom-6 z-20 flex items-end justify-center">
-              <div className="flex flex-col items-center gap-3">
+              <motion.div
+                onMouseEnter={() => setIsPaletteOpen(true)}
+                onMouseLeave={() => setIsPaletteOpen(false)}
+                animate={{ width: isPaletteOpen ? 220 : 44 }}
+                transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                className="flex h-11 items-center gap-2 overflow-hidden rounded-full border border-neutral-800/70 bg-neutral-900/90 px-2 shadow-soft backdrop-blur-sm"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-full text-neutral-200">
+                  <motion.div
+                    animate={{
+                      rotate: isPaletteOpen ? 135 : 0,
+                      scale: isPaletteOpen ? 1.05 : 1
+                    }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                  >
+                    <Plus className="h-5 w-5" />
+                  </motion.div>
+                </div>
+
                 <AnimatePresence>
                   {isPaletteOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 8 }}
-                      transition={{ duration: 0.18 }}
-                      className="flex items-center gap-2 rounded-full bg-neutral-900/90 px-3 py-2 shadow-soft border border-neutral-800/70 backdrop-blur-sm"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -6 }}
+                      transition={{ duration: 0.15 }}
+                      className="flex items-center gap-2"
                     >
                       <motion.button
-                        whileHover={{ scale: 1.06, y: -1 }}
+                        whileHover={{ scale: 1.08, y: -1 }}
                         whileTap={{ scale: 0.95 }}
                         type="button"
-                        onClick={() => {
-                          handleAddBlock("text");
-                          setIsPaletteOpen(false);
-                        }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 hover:bg-primary/80 hover:text-neutral-950 transition-colors"
+                        onClick={() => handleAddBlock("text")}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 transition-colors hover:bg-primary/80 hover:text-neutral-950"
+                        aria-label="Add text block"
                       >
                         <Type className="h-4 w-4" />
                       </motion.button>
                       <motion.button
-                        whileHover={{ scale: 1.06, y: -1 }}
+                        whileHover={{ scale: 1.08, y: -1 }}
                         whileTap={{ scale: 0.95 }}
                         type="button"
-                        onClick={() => {
-                          handleAddBlock("checklist");
-                          setIsPaletteOpen(false);
-                        }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 hover:bg-primary/80 hover:text-neutral-950 transition-colors"
+                        onClick={() => handleAddBlock("checklist")}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 transition-colors hover:bg-primary/80 hover:text-neutral-950"
+                        aria-label="Add checklist block"
                       >
                         <CheckSquare className="h-4 w-4" />
                       </motion.button>
                       <motion.button
-                        whileHover={{ scale: 1.06, y: -1 }}
+                        whileHover={{ scale: 1.08, y: -1 }}
                         whileTap={{ scale: 0.95 }}
                         type="button"
-                        onClick={() => {
-                          handleAddBlock("image");
-                          setIsPaletteOpen(false);
-                        }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 hover:bg-primary/80 hover:text-neutral-950 transition-colors"
+                        onClick={() => handleAddBlock("image")}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 transition-colors hover:bg-primary/80 hover:text-neutral-950"
+                        aria-label="Add image block"
                       >
                         <Image className="h-4 w-4" />
                       </motion.button>
                       <motion.button
-                        whileHover={{ scale: 1.06, y: -1 }}
+                        whileHover={{ scale: 1.08, y: -1 }}
                         whileTap={{ scale: 0.95 }}
                         type="button"
-                        onClick={() => {
-                          handleAddBlock("folder");
-                          setIsPaletteOpen(false);
-                        }}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 hover:bg-primary/80 hover:text-neutral-950 transition-colors"
+                        onClick={() => handleAddBlock("folder")}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 transition-colors hover:bg-primary/80 hover:text-neutral-950"
+                        aria-label="Add folder block"
                       >
                         <Folder className="h-4 w-4" />
                       </motion.button>
                     </motion.div>
                   )}
                 </AnimatePresence>
-
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.94 }}
-                  onClick={() => setIsPaletteOpen((prev) => !prev)}
-                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-neutral-800/70 bg-neutral-900/90 text-neutral-200 shadow-soft backdrop-blur-sm hover:border-primary/70 hover:text-primary"
-                >
-                  <Plus className="h-5 w-5" />
-                </motion.button>
-              </div>
+              </motion.div>
             </div>
 
-            {scopedBlocks.map((block) => (
+            {renderBlocks.map((block) => (
               <motion.div
                 key={block.id}
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -166,7 +174,7 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
             folderId={openFolderId}
             onClose={() => {
               console.log("[BoardCanvas] Folder overlay - close clicked", { folderId: openFolderId });
-              setOpenFolderId(null);
+              closeFolder();
               console.log("[BoardCanvas] Folder overlay - closed", { folderId: openFolderId });
             }}
           />

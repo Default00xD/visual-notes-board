@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBoardStore } from "@/store/board-store";
 import { BoardCanvas } from "@/features/board/board-canvas";
@@ -14,8 +13,10 @@ interface FolderOverlayProps {
 }
 
 export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
-  const { blocks } = useBoardStore();
+  const { blocks, openFolderOrigin, setFolderContainerRect, folderContainerRects } =
+    useBoardStore();
   const folder = blocks.find((block) => block.id === folderId);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     console.log("[FolderOverlay] Mounted", { folderId, folder });
@@ -33,14 +34,48 @@ export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
     (folder.content as { title?: string } | null)?.title ?? "Folder";
   const isRootFolder = folder.parentBlockId === null;
 
-  const containerClasses = isRootFolder
-    ? "relative h-[50vh] w-[50vw] overflow-hidden rounded-2xl border border-neutral-800/70 shadow-2xl"
-    : "relative h-full w-full overflow-hidden rounded-2xl border border-neutral-800/50 shadow-2xl";
+  const targetRect = useMemo(() => {
+    if (!folder.parentBlockId) {
+      const width = window.innerWidth * 0.5;
+      const height = window.innerHeight * 0.5;
+      return {
+        width,
+        height,
+        left: (window.innerWidth - width) / 2,
+        top: (window.innerHeight - height) / 2
+      };
+    }
+    const parent = folderContainerRects[folder.parentBlockId];
+    if (parent) return parent;
+    // Fallback: same as root until parent rect is known
+    const width = window.innerWidth * 0.5;
+    const height = window.innerHeight * 0.5;
+    return {
+      width,
+      height,
+      left: (window.innerWidth - width) / 2,
+      top: (window.innerHeight - height) / 2
+    };
+  }, [folder.parentBlockId, folderContainerRects]);
+
+  useLayoutEffect(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    setFolderContainerRect({
+      folderId,
+      rect: {
+        top: rect.top,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height
+      }
+    });
+  }, [folderId, setFolderContainerRect, targetRect.left, targetRect.top, targetRect.width, targetRect.height]);
 
   const overlayContent = (
     <AnimatePresence>
       <motion.div
-        className={`${isRootFolder ? "fixed inset-0" : "absolute inset-0"} z-[100] flex items-center justify-center bg-transparent`}
+        className={`${isRootFolder ? "fixed inset-0" : "fixed inset-0"} z-[100] bg-transparent`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -53,19 +88,48 @@ export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
         }}
       >
         <motion.div
-          className={containerClasses}
-          initial={{ scale: 0.8, y: 10, opacity: 0 }}
-          animate={{ scale: 1, y: 0, opacity: 1 }}
-          exit={{ scale: 0.95, y: 8, opacity: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          ref={containerRef}
+          className="absolute overflow-hidden rounded-2xl border border-neutral-800/70 shadow-2xl"
+          initial={
+            openFolderOrigin
+              ? {
+                  top: openFolderOrigin.top,
+                  left: openFolderOrigin.left,
+                  width: openFolderOrigin.width,
+                  height: openFolderOrigin.height,
+                  borderRadius: 16,
+                  opacity: 0.9
+                }
+              : {
+                  top: targetRect.top + 10,
+                  left: targetRect.left,
+                  width: targetRect.width,
+                  height: targetRect.height,
+                  borderRadius: 16,
+                  opacity: 0.9
+                }
+          }
+          animate={{
+            top: targetRect.top,
+            left: targetRect.left,
+            width: targetRect.width,
+            height: targetRect.height,
+            borderRadius: 16,
+            opacity: 1
+          }}
+          exit={{
+            top: openFolderOrigin?.top ?? targetRect.top,
+            left: openFolderOrigin?.left ?? targetRect.left,
+            width: openFolderOrigin?.width ?? targetRect.width,
+            height: openFolderOrigin?.height ?? targetRect.height,
+            opacity: 0
+          }}
+          transition={{ type: "spring", stiffness: 260, damping: 28 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between border-b border-neutral-800/50 bg-neutral-900/60 px-6 py-3 backdrop-blur-sm">
+          <div className="flex items-center justify-between border-b border-neutral-800/50 bg-neutral-950/40 px-4 py-2">
             <div className="flex flex-col">
-              <span className="font-semibold text-neutral-100 text-lg">{title}</span>
-              <span className="text-[11px] text-neutral-400 mt-0.5">
-                Inner visual board — create nested blocks freely.
-              </span>
+              <span className="font-semibold text-neutral-100 text-sm">{title}</span>
             </div>
             <motion.div
               whileHover={{ scale: 1.1, rotate: 90 }}
@@ -85,18 +149,13 @@ export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
               </Button>
             </motion.div>
           </div>
-          <div className={isRootFolder ? "h-[calc(50vh-3rem)] w-full" : "h-[calc(100%-3rem)] w-full"}>
+          <div className="h-[calc(100%-2.5rem)] w-full">
             <BoardCanvas parentBlockId={folderId} />
           </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>
   );
-
-  // Render to portal to avoid nesting issues
-  if (typeof window !== "undefined") {
-    return createPortal(overlayContent, document.body);
-  }
 
   return overlayContent;
 }

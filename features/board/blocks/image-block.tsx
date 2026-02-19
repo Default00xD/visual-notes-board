@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Json } from "@/types/database";
 import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
@@ -20,7 +20,12 @@ interface ImageBlockProps {
 
 const BUCKET_NAME = "visual-notes-images";
 
-export function ImageBlock({ block }: ImageBlockProps) {
+export interface ImageBlockHandle {
+  openFilePicker: () => void;
+}
+
+export const ImageBlock = forwardRef<ImageBlockHandle, ImageBlockProps>(
+  function ImageBlock({ block }, ref) {
   const { updateBlockContent } = useBoardStore();
   const initial = (block.content as ImageContent | null) ?? null;
   const [content, setContent] = useState<ImageContent | null>(initial);
@@ -38,6 +43,13 @@ export function ImageBlock({ block }: ImageBlockProps) {
       content: next ?? {}
     });
   };
+
+  useImperativeHandle(ref, () => ({
+    openFilePicker: () => {
+      if (isUploading) return;
+      fileInputRef.current?.click();
+    }
+  }));
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -92,15 +104,9 @@ export function ImageBlock({ block }: ImageBlockProps) {
     }
   };
 
-  const handleClick = () => {
-    if (isUploading) return;
-    fileInputRef.current?.click();
-  };
-
   return (
     <div
       className="relative h-full w-full overflow-hidden rounded-xl bg-neutral-900/40"
-      onClick={handleClick}
     >
       <input
         ref={fileInputRef}
@@ -117,7 +123,8 @@ export function ImageBlock({ block }: ImageBlockProps) {
           transition={{ duration: 0.25 }}
           src={content.url}
           alt={content.caption ?? "Image"}
-          className="h-full w-full object-cover cursor-pointer"
+          draggable={false}
+          className="h-full w-full object-cover pointer-events-none select-none"
           onLoad={(event) => {
             if (!content?.aspectRatio) {
               const img = event.currentTarget;
@@ -134,8 +141,8 @@ export function ImageBlock({ block }: ImageBlockProps) {
           }}
         />
       ) : (
-        <div className="flex h-full w-full cursor-pointer items-center justify-center text-[11px] text-neutral-500">
-          Нажмите, чтобы загрузить изображение
+        <div className="flex h-full w-full items-center justify-center text-[11px] text-neutral-500">
+          Нет изображения
         </div>
       )}
 
@@ -146,4 +153,4 @@ export function ImageBlock({ block }: ImageBlockProps) {
       )}
     </div>
   );
-}
+});

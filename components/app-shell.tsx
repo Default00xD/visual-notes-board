@@ -68,8 +68,8 @@ export function AppShell({ children }: AppShellProps) {
         transition={{ duration: 0.3 }}
         className="sticky top-0 z-40 border-b border-neutral-800/50 bg-neutral-950/80 backdrop-blur-md w-full"
       >
-        <div className="grid h-14 w-full grid-cols-[auto,1fr,auto] items-center px-6">
-          <div className="flex items-center">
+        <div className="grid h-14 w-full grid-cols-[1fr,auto,1fr] items-center px-6">
+          <div className="flex items-center justify-start">
             <Link
               href="/app"
               className="flex items-center gap-2 text-sm font-semibold tracking-tight transition-all hover:opacity-80"

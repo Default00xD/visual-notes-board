@@ -9,24 +9,13 @@ import { Resizable, type ResizeCallback } from "re-resizable";
 import { motion, AnimatePresence } from "framer-motion";
 import { useBoardStore } from "@/store/board-store";
 import type { BlockDto, BlockColor } from "@/services/blocks";
-import { BlockRenderer } from "@/features/board/block-renderer";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Upload } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Json } from "@/types/database";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { BlockRenderer } from "@/features/board/block-renderer";
+import { ImageBlock, type ImageBlockHandle } from "@/features/board/blocks/image-block";
 
 interface BlockCardProps {
   block: BlockDto;
@@ -69,7 +58,8 @@ export function BlockCard({ block }: BlockCardProps) {
     deleteBlock,
     bringToFront,
     moveBlockToFolder,
-    blocks
+    blocks,
+    setDragState
   } = useBoardStore();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -80,9 +70,11 @@ export function BlockCard({ block }: BlockCardProps) {
   });
   const [snapPos, setSnapPos] = useState<{ x: number; y: number } | null>(null);
   const [snapSize, setSnapSize] = useState<{ width: number; height: number } | null>(null);
-  const [renameOpen, setRenameOpen] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const nodeRef = useRef(null);
+  const imageRef = useRef<ImageBlockHandle | null>(null);
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
 
   const title = useMemo(() => {
     const content = block.content as { title?: string } | null;
@@ -120,6 +112,7 @@ export function BlockCard({ block }: BlockCardProps) {
   const handleStopDrag = (_event: DraggableEvent, data: DraggableData) => {
     console.log("[BlockCard] Drag stop - start", { blockId: block.id, data });
     setIsDragging(false);
+    setDragState(null);
 
     const nextX = snapToGrid(data.x);
     const nextY = snapToGrid(data.y);
@@ -186,6 +179,14 @@ export function BlockCard({ block }: BlockCardProps) {
 
   const handleDrag = (_event: DraggableEvent, data: DraggableData) => {
     setPos({ x: data.x, y: data.y });
+    setDragState({
+      blockId: block.id,
+      parentBlockId: block.parentBlockId,
+      centerX: data.x + block.width / 2,
+      centerY: data.y + block.height / 2,
+      width: block.width,
+      height: block.height
+    });
   };
 
   const handleResizeStop: ResizeCallback = (
@@ -204,10 +205,11 @@ export function BlockCard({ block }: BlockCardProps) {
 
     console.log("[BlockCard] Resize stop - updating size", { blockId: block.id, width, height });
     // Only update local state, don't save to server yet
+    const currentPos = snapPos ?? pos;
     void updateBlockPositionAndSize({
       id: block.id,
-      x: block.x,
-      y: block.y,
+      x: currentPos.x,
+      y: currentPos.y,
       width,
       height
     });
@@ -256,6 +258,7 @@ export function BlockCard({ block }: BlockCardProps) {
       onDrag={handleDrag}
       onStop={handleStopDrag}
       handle={isImage ? undefined : ".drag-handle, .drag-surface"}
+      cancel=".no-drag, input, textarea, button"
     >
       <div
         ref={nodeRef}
@@ -305,7 +308,7 @@ export function BlockCard({ block }: BlockCardProps) {
                 {/* Drag surface under all elements */}
                 <div className="drag-surface absolute inset-0 z-0 cursor-move" />
                 <div className="relative z-10 h-full w-full">
-                  <BlockRenderer block={block} />
+                  <ImageBlock block={block} ref={imageRef} />
                   <button
                     type="button"
                     onClick={(e) => {
@@ -322,9 +325,21 @@ export function BlockCard({ block }: BlockCardProps) {
                           });
                         });
                     }}
-                    className="absolute right-2 top-2 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-neutral-950/80 text-neutral-300 opacity-0 shadow-lg shadow-black/40 transition-all hover:bg-red-600/90 hover:text-white group-hover:opacity-100"
+                    className="no-drag absolute right-2 top-2 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-neutral-950/80 text-neutral-300 opacity-0 shadow-lg shadow-black/40 transition-all hover:bg-red-600/90 hover:text-white group-hover:opacity-100"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log("[BlockCard] Image upload button clicked", { blockId: block.id });
+                      imageRef.current?.openFilePicker();
+                    }}
+                    className="no-drag absolute right-10 top-2 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-neutral-950/80 text-neutral-300 opacity-0 shadow-lg shadow-black/40 transition-all hover:bg-neutral-800/90 hover:text-white group-hover:opacity-100"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
                   </button>
                 </div>
               </div>
@@ -393,75 +408,74 @@ export function BlockCard({ block }: BlockCardProps) {
                     </Popover>
 
                     <div className="flex-1 min-w-0">
-                      <div className="truncate text-sm font-medium text-neutral-200">
-                        {title || "Untitled"}
-                      </div>
+                      {isEditingTitle ? (
+                        <Input
+                          ref={titleInputRef}
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.target.value)}
+                          className="no-drag h-7 border-neutral-800/50 bg-neutral-900/40 px-2 py-1 text-sm text-neutral-100 focus-visible:ring-primary"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
+                          onBlur={() => {
+                            console.log("[BlockCard] Inline rename blur - saving", { blockId: block.id, newTitle: renameValue });
+                            persistTitle(renameValue);
+                            setIsEditingTitle(false);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              console.log("[BlockCard] Inline rename Enter - saving", { blockId: block.id, newTitle: renameValue });
+                              persistTitle(renameValue);
+                              setIsEditingTitle(false);
+                            }
+                            if (e.key === "Escape") {
+                              console.log("[BlockCard] Inline rename Escape - cancel", { blockId: block.id });
+                              setRenameValue(title);
+                              setIsEditingTitle(false);
+                            }
+                          }}
+                          autoFocus
+                        />
+                      ) : (
+                        <div className="truncate text-sm font-medium text-neutral-200">
+                          {title || "Untitled"}
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-6 w-6 text-neutral-400 opacity-0 transition-all group-hover:opacity-100 hover:text-neutral-200 hover:bg-neutral-800/50"
-                          onMouseDown={(e) => {
-                            e.stopPropagation();
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                          }}
-                        >
-                          <MoreVertical className="h-3.5 w-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent
-                        align="end"
-                        className="bg-neutral-900 border-neutral-800 z-[100]"
-                        onMouseDown={(e) => e.stopPropagation()}
-                      >
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            console.log("[BlockCard] Rename menu item clicked", {
-                              blockId: block.id,
-                              currentTitle: title
-                            });
-                            e.stopPropagation();
-                            setRenameValue(title);
-                            setRenameOpen(true);
-                            console.log("[BlockCard] Rename dialog opened", { blockId: block.id });
-                          }}
-                          className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
-                        >
-                          Rename…
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            console.log("[BlockCard] Delete menu item clicked", {
-                              blockId: block.id
-                            });
-                            e.stopPropagation();
-                            void deleteBlock(block.id)
-                              .then(() => {
-                                console.log("[BlockCard] Delete completed", {
-                                  blockId: block.id
-                                });
-                              })
-                              .catch((error) => {
-                                console.error("[BlockCard] Delete failed", {
-                                  blockId: block.id,
-                                  error
-                                });
-                              });
-                          }}
-                          className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
-                        >
-                          Delete block
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="no-drag h-7 w-7 text-neutral-400 opacity-0 transition-all group-hover:opacity-100 hover:text-neutral-200 hover:bg-neutral-800/50"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("[BlockCard] Inline rename button clicked", { blockId: block.id, currentTitle: title });
+                        setRenameValue(title);
+                        setIsEditingTitle(true);
+                        // Focus after render
+                        setTimeout(() => titleInputRef.current?.focus(), 0);
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="no-drag h-7 w-7 text-neutral-400 opacity-0 transition-all group-hover:opacity-100 hover:text-white hover:bg-red-600/80"
+                      onMouseDown={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log("[BlockCard] Delete button clicked", { blockId: block.id });
+                        void deleteBlock(block.id);
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
 
@@ -478,54 +492,6 @@ export function BlockCard({ block }: BlockCardProps) {
           </Resizable>
         </motion.div>
 
-        <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-          <DialogContent className="max-w-md bg-neutral-950 border border-neutral-800/50 z-[200]">
-            <DialogHeader>
-              <DialogTitle className="text-neutral-100">Rename block</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <Input
-                value={renameValue}
-                onChange={(e) => setRenameValue(e.target.value)}
-                placeholder="Title…"
-                className="border-neutral-800/50 bg-neutral-900/50 text-neutral-200 placeholder:text-neutral-500 focus-visible:ring-primary focus-visible:border-primary"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    console.log("[BlockCard] Rename dialog - Enter pressed", { blockId: block.id, newTitle: renameValue });
-                    persistTitle(renameValue);
-                    setRenameOpen(false);
-                    console.log("[BlockCard] Rename dialog - closed via Enter", { blockId: block.id });
-                  }
-                }}
-                autoFocus
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="border-neutral-800/50 bg-neutral-900/50 text-neutral-300 hover:bg-neutral-800/50 hover:text-white"
-                  onClick={() => {
-                    console.log("[BlockCard] Rename dialog - Cancel clicked", { blockId: block.id });
-                    setRenameOpen(false);
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    console.log("[BlockCard] Rename dialog - Save clicked", { blockId: block.id, newTitle: renameValue });
-                    persistTitle(renameValue);
-                    setRenameOpen(false);
-                    console.log("[BlockCard] Rename dialog - closed via Save", { blockId: block.id });
-                  }}
-                >
-                  Save
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </div>
     </Draggable>
   );
