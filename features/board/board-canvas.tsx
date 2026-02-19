@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import { CheckSquare, Folder, Image, Plus, Type } from "lucide-react";
 import { useBoardStore } from "@/store/board-store";
 import { BlockCard } from "@/features/board/block-card";
-import { FolderOverlay } from "@/features/board/folder-overlay";
 import type { BlockType } from "@/services/blocks";
 import { Button } from "@/components/ui/button";
 import {
@@ -165,21 +164,6 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
         </div>
       </div>
 
-      {openFolderId && (() => {
-        const folder = blocks.find((b) => b.id === openFolderId);
-        if (!folder || folder.parentBlockId !== parentBlockId) return null;
-
-        return (
-          <FolderOverlay
-            folderId={openFolderId}
-            onClose={() => {
-              console.log("[BoardCanvas] Folder overlay - close clicked", { folderId: openFolderId });
-              closeFolder();
-              console.log("[BoardCanvas] Folder overlay - closed", { folderId: openFolderId });
-            }}
-          />
-        );
-      })()}
     </>
   );
 }

@@ -16,6 +16,8 @@ import type { Json } from "@/types/database";
 import { Input } from "@/components/ui/input";
 import { BlockRenderer } from "@/features/board/block-renderer";
 import { ImageBlock, type ImageBlockHandle } from "@/features/board/blocks/image-block";
+import { BoardCanvas } from "@/features/board/board-canvas";
+import { X } from "lucide-react";
 
 interface BlockCardProps {
   block: BlockDto;
@@ -59,7 +61,9 @@ export function BlockCard({ block }: BlockCardProps) {
     bringToFront,
     moveBlockToFolder,
     blocks,
-    setDragState
+    setDragState,
+    openFolderId,
+    setOpenFolderId
   } = useBoardStore();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -70,6 +74,8 @@ export function BlockCard({ block }: BlockCardProps) {
   });
   const [snapPos, setSnapPos] = useState<{ x: number; y: number } | null>(null);
   const [snapSize, setSnapSize] = useState<{ width: number; height: number } | null>(null);
+  const [previewPos, setPreviewPos] = useState<{ x: number; y: number } | null>(null);
+  const [previewSize, setPreviewSize] = useState<{ width: number; height: number } | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [renameValue, setRenameValue] = useState("");
   const nodeRef = useRef(null);
@@ -113,9 +119,20 @@ export function BlockCard({ block }: BlockCardProps) {
     console.log("[BlockCard] Drag stop - start", { blockId: block.id, data });
     setIsDragging(false);
     setDragState(null);
+    setPreviewPos(null);
 
-    const nextX = snapToGrid(data.x);
-    const nextY = snapToGrid(data.y);
+    // Constrain to canvas bounds
+    const canvas = nodeRef.current?.closest('.relative.h-full')?.getBoundingClientRect();
+    const maxX = canvas ? canvas.width - block.width : window.innerWidth - block.width;
+    const maxY = canvas ? canvas.height - block.height : window.innerHeight - block.height;
+    
+    let nextX = snapToGrid(Math.max(0, Math.min(data.x, maxX)));
+    let nextY = snapToGrid(Math.max(0, Math.min(data.y, maxY)));
+    
+    // Ensure snapped values are within bounds
+    nextX = Math.max(0, Math.min(nextX, maxX));
+    nextY = Math.max(0, Math.min(nextY, maxY));
+    
     console.log("[BlockCard] Drag stop - snapped position", { blockId: block.id, nextX, nextY, originalX: data.x, originalY: data.y });
 
     // Show preview of snapped position
@@ -179,6 +196,10 @@ export function BlockCard({ block }: BlockCardProps) {
 
   const handleDrag = (_event: DraggableEvent, data: DraggableData) => {
     setPos({ x: data.x, y: data.y });
+    // Show preview of snapped position
+    const previewX = snapToGrid(data.x);
+    const previewY = snapToGrid(data.y);
+    setPreviewPos({ x: previewX, y: previewY });
     setDragState({
       blockId: block.id,
       parentBlockId: block.parentBlockId,
@@ -189,6 +210,18 @@ export function BlockCard({ block }: BlockCardProps) {
     });
   };
 
+  const handleResize: ResizeCallback = (
+    _event,
+    _direction,
+    ref
+  ) => {
+    if (!isResizing) return;
+    // Show preview of snapped size during resize
+    const previewWidth = snapToGrid(ref.offsetWidth);
+    const previewHeight = snapToGrid(ref.offsetHeight);
+    setPreviewSize({ width: previewWidth, height: previewHeight });
+  };
+
   const handleResizeStop: ResizeCallback = (
     _event,
     _direction,
@@ -196,8 +229,29 @@ export function BlockCard({ block }: BlockCardProps) {
   ) => {
     console.log("[BlockCard] Resize stop - start", { blockId: block.id, direction: _direction, currentSize: { width: ref.offsetWidth, height: ref.offsetHeight } });
     setIsResizing(false);
-    const width = snapToGrid(ref.offsetWidth);
-    const height = snapToGrid(ref.offsetHeight);
+    setPreviewSize(null);
+    
+    // Constrain to canvas bounds and snap
+    const canvas = nodeRef.current?.closest('.relative.h-full')?.getBoundingClientRect();
+    const currentX = snapPos?.x ?? pos.x;
+    const currentY = snapPos?.y ?? pos.y;
+    const maxWidth = canvas ? Math.max(snapToGrid(200), canvas.width - currentX) : Math.max(snapToGrid(200), window.innerWidth - currentX);
+    const maxHeight = canvas ? Math.max(snapToGrid(150), canvas.height - currentY) : Math.max(snapToGrid(150), window.innerHeight - currentY);
+    
+    let width = snapToGrid(Math.max(snapToGrid(200), Math.min(ref.offsetWidth, maxWidth)));
+    let height = snapToGrid(Math.max(snapToGrid(150), Math.min(ref.offsetHeight, maxHeight)));
+    
+    // For image blocks, maintain aspect ratio
+    if (isImage && aspectRatio) {
+      const snappedByWidth = height;
+      const snappedByHeight = width;
+      if (snappedByWidth / snappedByHeight > aspectRatio) {
+        height = snapToGrid(snappedByWidth / aspectRatio);
+      } else {
+        width = snapToGrid(snappedByHeight * aspectRatio);
+      }
+    }
+    
     console.log("[BlockCard] Resize stop - snapped size", { blockId: block.id, width, height, originalWidth: ref.offsetWidth, originalHeight: ref.offsetHeight });
     
     // Show preview of snapped size
@@ -219,6 +273,7 @@ export function BlockCard({ block }: BlockCardProps) {
   const handleResizeStart = () => {
     console.log("[BlockCard] Resize start", { blockId: block.id, currentSize: { width: block.width, height: block.height } });
     setIsResizing(true);
+    setIsDragging(false); // Ensure drag is not active during resize
   };
 
   const persistTitle = (nextTitle: string) => {
@@ -239,6 +294,8 @@ export function BlockCard({ block }: BlockCardProps) {
   const colorDotClass = COLOR_DOT_MAP[block.color] ?? COLOR_DOT_MAP.dark;
   const isSelected = selectedBlockId === block.id;
   const isImage = block.type === "image";
+  const isFolder = block.type === "folder";
+  const isFolderOpen = openFolderId === block.id;
 
   const aspectRatio = useMemo(() => {
     if (block.type !== "image") return null;
@@ -247,13 +304,31 @@ export function BlockCard({ block }: BlockCardProps) {
     return typeof ratio === "number" && ratio > 0 ? ratio : null;
   }, [block.type, block.content]);
 
-  const displayWidth = snapSize?.width ?? block.width;
-  const displayHeight = snapSize?.height ?? block.height;
+  const displayWidth = snapSize?.width ?? previewSize?.width ?? block.width;
+  const displayHeight = snapSize?.height ?? previewSize?.height ?? block.height;
+  const displayX = snapPos?.x ?? previewPos?.x ?? pos.x;
+  const displayY = snapPos?.y ?? previewPos?.y ?? pos.y;
 
   return (
+    <>
+      {/* Preview shadow showing final snapped position/size */}
+      {(isDragging || isResizing) && (previewPos || previewSize) && (
+        <div
+          style={{
+            position: "absolute",
+            left: previewPos?.x ?? pos.x,
+            top: previewPos?.y ?? pos.y,
+            width: previewSize?.width ?? block.width,
+            height: previewSize?.height ?? block.height,
+            zIndex: block.zIndex - 1,
+            pointerEvents: "none"
+          }}
+          className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5"
+        />
+      )}
     <Draggable
       nodeRef={nodeRef}
-      position={snapPos ?? pos}
+      position={displayX !== pos.x || displayY !== pos.y ? { x: displayX, y: displayY } : (snapPos ?? pos)}
       onStart={handleStartDrag}
       onDrag={handleDrag}
       onStop={handleStopDrag}
@@ -291,6 +366,7 @@ export function BlockCard({ block }: BlockCardProps) {
               topLeft: false
             }}
             onResizeStart={handleResizeStart}
+            onResize={handleResize}
             onResizeStop={handleResizeStop}
             style={{
               transition: snapSize ? "width 0.3s ease-out, height 0.3s ease-out" : undefined
@@ -301,9 +377,38 @@ export function BlockCard({ block }: BlockCardProps) {
               isSelected
                 ? "ring-2 ring-primary shadow-2xl"
                 : "ring-0 hover:ring-1 hover:ring-neutral-700/50"
-            } ${isDragging ? "opacity-90" : ""}`}
+            } ${isDragging ? "opacity-90" : ""} ${isFolderOpen ? "overflow-hidden" : ""}`}
+            style={isFolderOpen ? {
+              width: Math.max(displayWidth, snapToGrid(window.innerWidth * 0.6)),
+              height: Math.max(displayHeight, snapToGrid(window.innerHeight * 0.6))
+            } : undefined}
           >
-            {isImage ? (
+            {isFolderOpen ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+                className="relative flex h-full w-full flex-col overflow-hidden"
+              >
+                <div className="flex items-center justify-between border-b border-neutral-800/50 bg-neutral-950/40 px-4 py-2">
+                  <span className="font-semibold text-neutral-100 text-sm">{title || "Folder"}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log("[BlockCard] Folder close button clicked", { blockId: block.id });
+                      setOpenFolderId(null);
+                    }}
+                    className="no-drag inline-flex h-7 w-7 items-center justify-center rounded-full text-neutral-300 transition-all hover:bg-neutral-800/50 hover:text-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="relative flex-1 overflow-hidden">
+                  <BoardCanvas parentBlockId={block.id} />
+                </div>
+              </motion.div>
+            ) : isImage ? (
               <div className="relative flex h-full w-full overflow-hidden rounded-xl">
                 {/* Drag surface under all elements */}
                 <div className="drag-surface absolute inset-0 z-0 cursor-move" />
@@ -413,7 +518,7 @@ export function BlockCard({ block }: BlockCardProps) {
                           ref={titleInputRef}
                           value={renameValue}
                           onChange={(e) => setRenameValue(e.target.value)}
-                          className="no-drag h-7 border-neutral-800/50 bg-neutral-900/40 px-2 py-1 text-sm text-neutral-100 focus-visible:ring-primary"
+                          className="no-drag h-7 border-neutral-800/50 bg-neutral-900/40 px-2 py-1 text-sm text-neutral-100 focus-visible:ring-0 focus-visible:border-primary/50"
                           onMouseDown={(e) => e.stopPropagation()}
                           onClick={(e) => e.stopPropagation()}
                           onBlur={() => {
@@ -494,5 +599,6 @@ export function BlockCard({ block }: BlockCardProps) {
 
       </div>
     </Draggable>
+    </>
   );
 }

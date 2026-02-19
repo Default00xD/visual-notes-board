@@ -154,7 +154,7 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
                 handleChangeText(item.id, event.target.value)
               }
               placeholder="Новая задача"
-              className={`h-7 border-none bg-transparent px-0 text-[12px] shadow-none placeholder:text-neutral-500 focus-visible:ring-0 ${
+              className={`h-7 border-none bg-transparent px-0 text-[12px] shadow-none placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:outline-none ${
                 item.checked ? "text-neutral-300" : "text-neutral-200"
               }`}
             />

@@ -15,11 +15,12 @@ interface FolderBlockProps {
 }
 
 export function FolderBlock({ block }: FolderBlockProps) {
-  const { blocks, dragState, openFolderFromRect } = useBoardStore();
+  const { blocks, dragState, setOpenFolderId, openFolderId } = useBoardStore();
   const content = (block.content as FolderContent | null) ?? {};
   const nestedCount = blocks.filter(
     (b) => b.parentBlockId === block.id
   ).length;
+  const isOpen = openFolderId === block.id;
 
   const isDropTarget = (() => {
     if (!dragState) return false;
@@ -36,15 +37,13 @@ export function FolderBlock({ block }: FolderBlockProps) {
     <motion.button
       type="button"
       onClick={(e) => {
-        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-        const origin = {
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height
-        };
-        console.log("[FolderBlock] Open clicked", { blockId: block.id, folderTitle: content.title, origin });
-        openFolderFromRect({ folderId: block.id, origin });
+        e.stopPropagation();
+        console.log("[FolderBlock] Open clicked", { blockId: block.id, folderTitle: content.title, isOpen });
+        if (isOpen) {
+          setOpenFolderId(null);
+        } else {
+          setOpenFolderId(block.id);
+        }
       }}
       animate={
         isDropTarget

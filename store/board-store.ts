@@ -247,10 +247,11 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const previousBlocks = blocks;
     const previousSelected = selectedBlockId;
     const blockToDelete = blocks.find((b) => b.id === id);
+    
+    // Optimistically remove from UI immediately
     set({
       blocks: blocks.filter((block) => block.id !== id),
       selectedBlockId: selectedBlockId === id ? null : selectedBlockId,
-      hasUnsavedChanges: true,
       ...(openFolderId && blockToDelete?.parentBlockId === openFolderId
         ? { openFolderStackMode: false }
         : null)
@@ -258,20 +259,35 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     console.log("[Store] deleteBlock - optimistic update applied", { id, blockToDelete });
 
     console.log("[Store] deleteBlock - sending request", { id });
-    const response = await fetch(`/api/blocks/${id}`, {
-      method: "DELETE"
-    });
+    try {
+      const response = await fetch(`/api/blocks/${id}`, {
+        method: "DELETE"
+      });
 
-    if (!response.ok) {
-      console.error("[Store] deleteBlock - request failed", { id, status: response.status, statusText: response.statusText });
-      // Revert optimistic update on error
+      if (!response.ok) {
+        console.error("[Store] deleteBlock - request failed", { id, status: response.status, statusText: response.statusText });
+        // Revert optimistic update on error
+        set({
+          blocks: previousBlocks,
+          selectedBlockId: previousSelected,
+          hasUnsavedChanges: true
+        });
+        console.log("[Store] deleteBlock - reverted optimistic update", { id });
+        throw new Error(`Failed to delete block: ${response.statusText}`);
+      } else {
+        console.log("[Store] deleteBlock - completed successfully", { id });
+        // Mark as saved since deletion was persisted
+        set({ hasUnsavedChanges: false });
+      }
+    } catch (error) {
+      console.error("[Store] deleteBlock - error", { id, error });
+      // Revert on any error
       set({
         blocks: previousBlocks,
-        selectedBlockId: previousSelected
+        selectedBlockId: previousSelected,
+        hasUnsavedChanges: true
       });
-      console.log("[Store] deleteBlock - reverted optimistic update", { id });
-    } else {
-      console.log("[Store] deleteBlock - completed successfully", { id });
+      throw error;
     }
   },
   bringToFront: async (id) => {
