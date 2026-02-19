@@ -116,10 +116,12 @@ export function BlockCard({ block }: BlockCardProps) {
   }, [snapSize]);
 
   const handleStopDrag = (_event: DraggableEvent, data: DraggableData) => {
+    console.log("[BlockCard] Drag stop - start", { blockId: block.id, data });
     setIsDragging(false);
 
     const nextX = snapToGrid(data.x);
     const nextY = snapToGrid(data.y);
+    console.log("[BlockCard] Drag stop - snapped position", { blockId: block.id, nextX, nextY, originalX: data.x, originalY: data.y });
 
     // Show preview of snapped position
     setSnapPos({ x: nextX, y: nextY });
@@ -142,16 +144,22 @@ export function BlockCard({ block }: BlockCardProps) {
     });
 
     if (targetFolder) {
+      console.log("[BlockCard] Drag stop - moving to folder", { blockId: block.id, folderId: targetFolder.id });
       // Snap into the folder canvas with a reasonable default position.
       void moveBlockToFolder({
         blockId: block.id,
         folderId: targetFolder.id,
         x: snapToGrid(80),
         y: snapToGrid(80)
+      }).then(() => {
+        console.log("[BlockCard] Drag stop - moved to folder successfully", { blockId: block.id, folderId: targetFolder.id });
+      }).catch((error) => {
+        console.error("[BlockCard] Drag stop - failed to move to folder", { blockId: block.id, folderId: targetFolder.id, error });
       });
       return;
     }
 
+    console.log("[BlockCard] Drag stop - updating position", { blockId: block.id, x: nextX, y: nextY });
     // Only update local state, don't save to server yet
     void updateBlockPositionAndSize({
       id: block.id,
@@ -160,12 +168,18 @@ export function BlockCard({ block }: BlockCardProps) {
       width: block.width,
       height: block.height
     });
+    console.log("[BlockCard] Drag stop - position updated", { blockId: block.id, x: nextX, y: nextY });
   };
 
   const handleStartDrag = () => {
+    console.log("[BlockCard] Drag start", { blockId: block.id, currentPos: { x: block.x, y: block.y } });
     setIsDragging(true);
     setSelectedBlock(block.id);
-    void bringToFront(block.id);
+    void bringToFront(block.id).then(() => {
+      console.log("[BlockCard] Drag start - brought to front", { blockId: block.id });
+    }).catch((error) => {
+      console.error("[BlockCard] Drag start - failed to bring to front", { blockId: block.id, error });
+    });
   };
 
   const handleDrag = (_event: DraggableEvent, data: DraggableData) => {
@@ -177,13 +191,16 @@ export function BlockCard({ block }: BlockCardProps) {
     _direction,
     ref
   ) => {
+    console.log("[BlockCard] Resize stop - start", { blockId: block.id, direction: _direction, currentSize: { width: ref.offsetWidth, height: ref.offsetHeight } });
     setIsResizing(false);
     const width = snapToGrid(ref.offsetWidth);
     const height = snapToGrid(ref.offsetHeight);
+    console.log("[BlockCard] Resize stop - snapped size", { blockId: block.id, width, height, originalWidth: ref.offsetWidth, originalHeight: ref.offsetHeight });
     
     // Show preview of snapped size
     setSnapSize({ width, height });
 
+    console.log("[BlockCard] Resize stop - updating size", { blockId: block.id, width, height });
     // Only update local state, don't save to server yet
     void updateBlockPositionAndSize({
       id: block.id,
@@ -192,13 +209,16 @@ export function BlockCard({ block }: BlockCardProps) {
       width,
       height
     });
+    console.log("[BlockCard] Resize stop - size updated", { blockId: block.id, width, height });
   };
 
   const handleResizeStart = () => {
+    console.log("[BlockCard] Resize start", { blockId: block.id, currentSize: { width: block.width, height: block.height } });
     setIsResizing(true);
   };
 
   const persistTitle = (nextTitle: string) => {
+    console.log("[BlockCard] Persist title - start", { blockId: block.id, newTitle: nextTitle, oldTitle: title });
     const content = (block.content as Record<string, Json>) ?? {};
     // Only update local state, don't save to server yet
     void updateBlockContent({
@@ -208,6 +228,7 @@ export function BlockCard({ block }: BlockCardProps) {
         title: nextTitle.trim() || undefined
       }
     });
+    console.log("[BlockCard] Persist title - updated", { blockId: block.id, title: nextTitle.trim() || undefined });
   };
 
   const colorClass = COLOR_MAP[block.color] ?? COLOR_MAP.slate;
@@ -307,7 +328,12 @@ export function BlockCard({ block }: BlockCardProps) {
                             key={color}
                             type="button"
                             onClick={() => {
-                              void changeBlockColor({ id: block.id, color });
+                              console.log("[BlockCard] Color change - start", { blockId: block.id, newColor: color, oldColor: block.color });
+                              void changeBlockColor({ id: block.id, color }).then(() => {
+                                console.log("[BlockCard] Color change - completed", { blockId: block.id, color });
+                              }).catch((error) => {
+                                console.error("[BlockCard] Color change - failed", { blockId: block.id, color, error });
+                              });
                             }}
                             className={`h-6 w-6 rounded-full border border-neutral-700/50 shadow-sm transition-all hover:border-primary/50 ${
                               COLOR_DOT_MAP[color]
@@ -342,9 +368,11 @@ export function BlockCard({ block }: BlockCardProps) {
                     >
                       <DropdownMenuItem
                         onClick={(e) => {
+                          console.log("[BlockCard] Rename menu item clicked", { blockId: block.id, currentTitle: title });
                           e.stopPropagation();
                           setRenameValue(title);
                           setRenameOpen(true);
+                          console.log("[BlockCard] Rename dialog opened", { blockId: block.id });
                         }}
                         className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
                       >
@@ -352,8 +380,13 @@ export function BlockCard({ block }: BlockCardProps) {
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={(e) => {
+                          console.log("[BlockCard] Delete menu item clicked", { blockId: block.id });
                           e.stopPropagation();
-                          void deleteBlock(block.id);
+                          void deleteBlock(block.id).then(() => {
+                            console.log("[BlockCard] Delete completed", { blockId: block.id });
+                          }).catch((error) => {
+                            console.error("[BlockCard] Delete failed", { blockId: block.id, error });
+                          });
                         }}
                         className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
                       >
@@ -388,8 +421,10 @@ export function BlockCard({ block }: BlockCardProps) {
                 className="border-neutral-800/50 bg-neutral-900/50 text-neutral-200 placeholder:text-neutral-500 focus-visible:ring-primary focus-visible:border-primary"
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
+                    console.log("[BlockCard] Rename dialog - Enter pressed", { blockId: block.id, newTitle: renameValue });
                     persistTitle(renameValue);
                     setRenameOpen(false);
+                    console.log("[BlockCard] Rename dialog - closed via Enter", { blockId: block.id });
                   }
                 }}
                 autoFocus
@@ -399,15 +434,20 @@ export function BlockCard({ block }: BlockCardProps) {
                   type="button"
                   variant="outline"
                   className="border-neutral-800/50 bg-neutral-900/50 text-neutral-300 hover:bg-neutral-800/50 hover:text-white"
-                  onClick={() => setRenameOpen(false)}
+                  onClick={() => {
+                    console.log("[BlockCard] Rename dialog - Cancel clicked", { blockId: block.id });
+                    setRenameOpen(false);
+                  }}
                 >
                   Cancel
                 </Button>
                 <Button
                   type="button"
                   onClick={() => {
+                    console.log("[BlockCard] Rename dialog - Save clicked", { blockId: block.id, newTitle: renameValue });
                     persistTitle(renameValue);
                     setRenameOpen(false);
+                    console.log("[BlockCard] Rename dialog - closed via Save", { blockId: block.id });
                   }}
                 >
                   Save

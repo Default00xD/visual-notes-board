@@ -22,7 +22,9 @@ export function FolderBlock({ block }: FolderBlockProps) {
   ).length;
 
   const handleOpen = () => {
+    console.log("[FolderBlock] Open clicked", { blockId: block.id, folderTitle: content.title });
     setOpenFolderId(block.id);
+    console.log("[FolderBlock] Open - folder ID set", { blockId: block.id });
   };
 
   return (

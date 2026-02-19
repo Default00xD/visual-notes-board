@@ -23,6 +23,7 @@ export function LikesBlock({ block }: LikesBlockProps) {
   }, [initial]);
 
   const handleLike = () => {
+    console.log("[LikesBlock] Like clicked - start", { blockId: block.id, currentCount: count });
     const next = count + 1;
     setCount(next);
     void updateBlockContent({
@@ -30,6 +31,10 @@ export function LikesBlock({ block }: LikesBlockProps) {
       content: {
         count: next
       }
+    }).then(() => {
+      console.log("[LikesBlock] Like clicked - completed", { blockId: block.id, newCount: next });
+    }).catch((error) => {
+      console.error("[LikesBlock] Like clicked - failed", { blockId: block.id, error });
     });
   };
 

@@ -43,14 +43,19 @@ export function ImageBlock({ block }: ImageBlockProps) {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      console.log("[ImageBlock] File change - no file selected", { blockId: block.id });
+      return;
+    }
 
+    console.log("[ImageBlock] File change - start upload", { blockId: block.id, fileName: file.name, fileSize: file.size });
     try {
       setIsUploading(true);
       const supabase = getSupabaseBrowserClient();
       const extension = file.name.split(".").pop() ?? "png";
       const path = `${block.boardId}/${block.id}-${Date.now()}.${extension}`;
 
+      console.log("[ImageBlock] File change - uploading to storage", { blockId: block.id, path });
       const { error: uploadError } = await supabase.storage
         .from(BUCKET_NAME)
         .upload(path, file, {
@@ -58,31 +63,38 @@ export function ImageBlock({ block }: ImageBlockProps) {
         });
 
       if (uploadError) {
-        // eslint-disable-next-line no-console
-        console.error(uploadError);
+        console.error("[ImageBlock] File change - upload failed", { blockId: block.id, error: uploadError });
         return;
       }
 
       const {
         data: { publicUrl }
       } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
+      console.log("[ImageBlock] File change - upload successful", { blockId: block.id, publicUrl });
 
       persist({
         url: publicUrl,
         caption: content?.caption
       });
+      console.log("[ImageBlock] File change - content updated", { blockId: block.id });
     } finally {
       setIsUploading(false);
+      console.log("[ImageBlock] File change - finished", { blockId: block.id });
     }
   };
 
   const handleCaptionBlur = (event: React.FocusEvent<HTMLInputElement>) => {
     const caption = event.target.value;
-    if (!content) return;
+    console.log("[ImageBlock] Caption blur - saving", { blockId: block.id, captionLength: caption.length });
+    if (!content) {
+      console.log("[ImageBlock] Caption blur - no content, skipping", { blockId: block.id });
+      return;
+    }
     persist({
       ...content,
       caption
     });
+    console.log("[ImageBlock] Caption blur - saved", { blockId: block.id });
   };
 
   return (

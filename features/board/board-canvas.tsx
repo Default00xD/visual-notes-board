@@ -35,14 +35,16 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
 
   const handleAddBlock = useCallback(
     (type: BlockType) => {
+      console.log("[BoardCanvas] Add block - start", { type, parentBlockId, scopedBlocksCount: scopedBlocks.length });
       createBlock({
         type,
         parentBlockId,
         x: snapToGrid(80 + scopedBlocks.length * 24),
         y: snapToGrid(80 + scopedBlocks.length * 16)
+      }).then(() => {
+        console.log("[BoardCanvas] Add block - completed", { type, parentBlockId });
       }).catch((error) => {
-        // eslint-disable-next-line no-console
-        console.error(error);
+        console.error("[BoardCanvas] Add block - failed", { type, parentBlockId, error });
       });
     },
     [createBlock, parentBlockId, scopedBlocks.length]
@@ -141,7 +143,11 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
       {openFolderId && parentBlockId === null && (
         <FolderOverlay
           folderId={openFolderId}
-          onClose={() => setOpenFolderId(null)}
+          onClose={() => {
+            console.log("[BoardCanvas] Folder overlay - close clicked", { folderId: openFolderId });
+            setOpenFolderId(null);
+            console.log("[BoardCanvas] Folder overlay - closed", { folderId: openFolderId });
+          }}
         />
       )}
     </>

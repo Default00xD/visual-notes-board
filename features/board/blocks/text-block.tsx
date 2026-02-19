@@ -23,11 +23,16 @@ export function TextBlock({ block }: TextBlockProps) {
   }, [initial]);
 
   const handleBlur = () => {
+    console.log("[TextBlock] Blur - saving text", { blockId: block.id, textLength: value.length });
     void updateBlockContent({
       id: block.id,
       content: {
         text: value
       }
+    }).then(() => {
+      console.log("[TextBlock] Blur - text saved", { blockId: block.id });
+    }).catch((error) => {
+      console.error("[TextBlock] Blur - failed to save text", { blockId: block.id, error });
     });
   };
 

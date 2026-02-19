@@ -33,16 +33,22 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
   }, [initial]);
 
   const persist = (nextItems: ChecklistItem[]) => {
+    console.log("[ChecklistBlock] Persist - updating items", { blockId: block.id, itemsCount: nextItems.length });
     setItems(nextItems);
     void updateBlockContent({
       id: block.id,
       content: {
         items: nextItems
       }
+    }).then(() => {
+      console.log("[ChecklistBlock] Persist - items saved", { blockId: block.id, itemsCount: nextItems.length });
+    }).catch((error) => {
+      console.error("[ChecklistBlock] Persist - failed to save items", { blockId: block.id, error });
     });
   };
 
   const handleAdd = () => {
+    console.log("[ChecklistBlock] Add item - start", { blockId: block.id, currentItemsCount: items.length });
     const nextItems = [
       ...items,
       {
@@ -52,20 +58,26 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
       }
     ];
     persist(nextItems);
+    console.log("[ChecklistBlock] Add item - completed", { blockId: block.id, newItemsCount: nextItems.length });
   };
 
   const handleToggle = (id: string) => {
+    console.log("[ChecklistBlock] Toggle item - start", { blockId: block.id, itemId: id });
+    const item = items.find((i) => i.id === id);
     const nextItems = items.map((item) =>
       item.id === id ? { ...item, checked: !item.checked } : item
     );
     persist(nextItems);
+    console.log("[ChecklistBlock] Toggle item - completed", { blockId: block.id, itemId: id, newChecked: !item?.checked });
   };
 
   const handleChangeText = (id: string, text: string) => {
+    console.log("[ChecklistBlock] Change text - start", { blockId: block.id, itemId: id, textLength: text.length });
     const nextItems = items.map((item) =>
       item.id === id ? { ...item, text } : item
     );
     persist(nextItems);
+    console.log("[ChecklistBlock] Change text - completed", { blockId: block.id, itemId: id });
   };
 
   return (

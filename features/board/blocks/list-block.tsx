@@ -25,23 +25,32 @@ export function ListBlock({ block }: ListBlockProps) {
   }, [initial]);
 
   const persist = (nextItems: string[]) => {
+    console.log("[ListBlock] Persist - updating items", { blockId: block.id, itemsCount: nextItems.length });
     setItems(nextItems);
     void updateBlockContent({
       id: block.id,
       content: {
         items: nextItems
       }
+    }).then(() => {
+      console.log("[ListBlock] Persist - items saved", { blockId: block.id, itemsCount: nextItems.length });
+    }).catch((error) => {
+      console.error("[ListBlock] Persist - failed to save items", { blockId: block.id, error });
     });
   };
 
   const handleAdd = () => {
+    console.log("[ListBlock] Add item - start", { blockId: block.id, currentItemsCount: items.length });
     const nextItems = [...items, ""];
     persist(nextItems);
+    console.log("[ListBlock] Add item - completed", { blockId: block.id, newItemsCount: nextItems.length });
   };
 
   const handleChange = (index: number, value: string) => {
+    console.log("[ListBlock] Change item - start", { blockId: block.id, index, valueLength: value.length });
     const nextItems = items.map((item, i) => (i === index ? value : item));
     persist(nextItems);
+    console.log("[ListBlock] Change item - completed", { blockId: block.id, index });
   };
 
   return (

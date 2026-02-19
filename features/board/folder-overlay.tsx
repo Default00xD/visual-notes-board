@@ -18,12 +18,14 @@ export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
   const folder = blocks.find((block) => block.id === folderId);
 
   useEffect(() => {
+    console.log("[FolderOverlay] Mounted", { folderId, folder });
     // Prevent body scroll when overlay is open
     document.body.style.overflow = "hidden";
     return () => {
+      console.log("[FolderOverlay] Unmounting", { folderId });
       document.body.style.overflow = "";
     };
-  }, []);
+  }, [folderId, folder]);
 
   if (!folder) return null;
 
@@ -40,6 +42,7 @@ export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
         transition={{ duration: 0.2 }}
         onClick={(e) => {
           if (e.target === e.currentTarget) {
+            console.log("[FolderOverlay] Background clicked - closing", { folderId });
             onClose();
           }
         }}
@@ -67,7 +70,10 @@ export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
                 type="button"
                 size="sm"
                 variant="ghost"
-                onClick={onClose}
+                onClick={() => {
+                  console.log("[FolderOverlay] Close button clicked", { folderId });
+                  onClose();
+                }}
                 className="text-neutral-300 hover:text-white hover:bg-neutral-800/50"
               >
                 <X className="h-4 w-4" />
