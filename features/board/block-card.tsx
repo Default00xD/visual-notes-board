@@ -195,7 +195,7 @@ export function BlockCard({ block }: BlockCardProps) {
       >
         {/* motion is INSIDE the draggable node to avoid transform conflicts */}
         <motion.div
-          whileHover={!isDragging && !isResizing ? { scale: 1.02 } : {}}
+          whileHover={!isDragging && !isResizing ? { scale: 1 } : {}}
           transition={{ duration: 0.18 }}
         >
           <Resizable
@@ -237,7 +237,7 @@ export function BlockCard({ block }: BlockCardProps) {
                 <Popover>
                   <PopoverTrigger asChild>
                     <motion.button
-                      whileHover={{ scale: 1.1 }}
+                      whileHover={{ scale: 1 }}
                       whileTap={{ scale: 0.9 }}
                       type="button"
                       className="h-5 w-5 rounded-full border border-neutral-700/50 shadow-sm transition-all hover:border-primary/50"
