@@ -78,7 +78,7 @@ export function BlockCard({ block }: BlockCardProps) {
   const [previewSize, setPreviewSize] = useState<{ width: number; height: number } | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [renameValue, setRenameValue] = useState("");
-  const nodeRef = useRef(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<ImageBlockHandle | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -122,7 +122,8 @@ export function BlockCard({ block }: BlockCardProps) {
     setPreviewPos(null);
 
     // Constrain to canvas bounds
-    const canvas = nodeRef.current?.closest('.relative.h-full')?.getBoundingClientRect();
+    const canvasElement = nodeRef.current?.closest('.relative.h-full') as HTMLElement | null;
+    const canvas = canvasElement?.getBoundingClientRect();
     const maxX = canvas ? canvas.width - block.width : window.innerWidth - block.width;
     const maxY = canvas ? canvas.height - block.height : window.innerHeight - block.height;
     
@@ -232,7 +233,8 @@ export function BlockCard({ block }: BlockCardProps) {
     setPreviewSize(null);
     
     // Constrain to canvas bounds and snap
-    const canvas = nodeRef.current?.closest('.relative.h-full')?.getBoundingClientRect();
+    const canvasElement = nodeRef.current?.closest('.relative.h-full') as HTMLElement | null;
+    const canvas = canvasElement?.getBoundingClientRect();
     const currentX = snapPos?.x ?? pos.x;
     const currentY = snapPos?.y ?? pos.y;
     const maxWidth = canvas ? Math.max(snapToGrid(200), canvas.width - currentX) : Math.max(snapToGrid(200), window.innerWidth - currentX);
@@ -369,7 +371,17 @@ export function BlockCard({ block }: BlockCardProps) {
             onResize={handleResize}
             onResizeStop={handleResizeStop}
             style={{
-              transition: snapSize ? "width 0.3s ease-out, height 0.3s ease-out" : undefined
+              ...(snapSize
+                ? {
+                    transition: "width 0.3s ease-out, height 0.3s ease-out"
+                  }
+                : {}),
+              ...(isFolderOpen
+                ? {
+                    width: Math.max(displayWidth, snapToGrid(window.innerWidth * 0.6)),
+                    height: Math.max(displayHeight, snapToGrid(window.innerHeight * 0.6))
+                  }
+                : {})
             }}
             className={`group flex flex-col rounded-xl border shadow-xl backdrop-blur-sm transition-all duration-200 ${
               isImage ? "bg-transparent border-none shadow-none" : colorClass
@@ -378,10 +390,6 @@ export function BlockCard({ block }: BlockCardProps) {
                 ? "ring-2 ring-primary shadow-2xl"
                 : "ring-0 hover:ring-1 hover:ring-neutral-700/50"
             } ${isDragging ? "opacity-90" : ""} ${isFolderOpen ? "overflow-hidden" : ""}`}
-            style={isFolderOpen ? {
-              width: Math.max(displayWidth, snapToGrid(window.innerWidth * 0.6)),
-              height: Math.max(displayHeight, snapToGrid(window.innerHeight * 0.6))
-            } : undefined}
           >
             {isFolderOpen ? (
               <motion.div
