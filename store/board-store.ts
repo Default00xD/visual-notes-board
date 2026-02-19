@@ -96,7 +96,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       y,
       width,
       height,
-      color: "slate" as BlockColor,
+      color: "dark" as BlockColor,
       content: {} as Json,
       zIndex: nextZ
     };

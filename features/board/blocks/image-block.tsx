@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 interface ImageContent {
   url: string;
   caption?: string;
+  aspectRatio?: number;
   [key: string]: Json | undefined;
 }
 
@@ -71,11 +72,20 @@ export function ImageBlock({ block }: ImageBlockProps) {
       } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
       console.log("[ImageBlock] File change - upload successful", { blockId: block.id, publicUrl });
 
-      persist({
-        url: publicUrl,
-        caption: content?.caption
-      });
-      console.log("[ImageBlock] File change - content updated", { blockId: block.id });
+      const img = new Image();
+      img.onload = () => {
+        const ratio = img.naturalWidth / img.naturalHeight || 1;
+        persist({
+          url: publicUrl,
+          caption: content?.caption,
+          aspectRatio: ratio
+        });
+        console.log("[ImageBlock] File change - content updated with aspectRatio", {
+          blockId: block.id,
+          aspectRatio: ratio
+        });
+      };
+      img.src = publicUrl;
     } finally {
       setIsUploading(false);
       console.log("[ImageBlock] File change - finished", { blockId: block.id });
@@ -107,7 +117,21 @@ export function ImageBlock({ block }: ImageBlockProps) {
           transition={{ duration: 0.25 }}
           src={content.url}
           alt={content.caption ?? "Image"}
-          className="h-full w-full object-contain cursor-pointer"
+          className="h-full w-full object-cover cursor-pointer"
+          onLoad={(event) => {
+            if (!content?.aspectRatio) {
+              const img = event.currentTarget;
+              const ratio = img.naturalWidth / img.naturalHeight || 1;
+              persist({
+                ...content,
+                aspectRatio: ratio
+              });
+              console.log("[ImageBlock] onLoad - aspectRatio set from existing image", {
+                blockId: block.id,
+                aspectRatio: ratio
+              });
+            }
+          }}
         />
       ) : (
         <div className="flex h-full w-full cursor-pointer items-center justify-center text-[11px] text-neutral-500">

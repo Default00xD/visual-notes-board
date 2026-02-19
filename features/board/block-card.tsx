@@ -40,6 +40,7 @@ const snapToGrid = (value: number): number => {
 };
 
 const COLOR_MAP: Record<BlockColor, string> = {
+  dark: "bg-neutral-900/90 border-neutral-800/70",
   slate: "bg-slate-800/90 border-slate-700/50",
   amber: "bg-amber-900/40 border-amber-700/50",
   emerald: "bg-emerald-900/40 border-emerald-700/50",
@@ -49,6 +50,7 @@ const COLOR_MAP: Record<BlockColor, string> = {
 };
 
 const COLOR_DOT_MAP: Record<BlockColor, string> = {
+  dark: "bg-neutral-700",
   slate: "bg-slate-500",
   amber: "bg-amber-500",
   emerald: "bg-emerald-500",
@@ -231,10 +233,17 @@ export function BlockCard({ block }: BlockCardProps) {
     console.log("[BlockCard] Persist title - updated", { blockId: block.id, title: nextTitle.trim() || undefined });
   };
 
-  const colorClass = COLOR_MAP[block.color] ?? COLOR_MAP.slate;
-  const colorDotClass = COLOR_DOT_MAP[block.color] ?? COLOR_DOT_MAP.slate;
+  const colorClass = COLOR_MAP[block.color] ?? COLOR_MAP.dark;
+  const colorDotClass = COLOR_DOT_MAP[block.color] ?? COLOR_DOT_MAP.dark;
   const isSelected = selectedBlockId === block.id;
   const isImage = block.type === "image";
+
+  const aspectRatio = useMemo(() => {
+    if (block.type !== "image") return null;
+    const content = block.content as { aspectRatio?: number } | null;
+    const ratio = content?.aspectRatio;
+    return typeof ratio === "number" && ratio > 0 ? ratio : null;
+  }, [block.type, block.content]);
 
   const displayWidth = snapSize?.width ?? block.width;
   const displayHeight = snapSize?.height ?? block.height;
@@ -246,7 +255,7 @@ export function BlockCard({ block }: BlockCardProps) {
       onStart={handleStartDrag}
       onDrag={handleDrag}
       onStop={handleStopDrag}
-      handle=".drag-handle, .drag-surface"
+      handle={isImage ? undefined : ".drag-handle, .drag-surface"}
     >
       <div
         ref={nodeRef}
@@ -267,6 +276,7 @@ export function BlockCard({ block }: BlockCardProps) {
             }}
             minWidth={snapToGrid(200)}
             minHeight={snapToGrid(150)}
+            lockAspectRatio={isImage && aspectRatio ? aspectRatio : undefined}
             enable={{
               top: false,
               right: true,
@@ -323,14 +333,6 @@ export function BlockCard({ block }: BlockCardProps) {
                 {/* Header (drag handle) */}
                 <div className="drag-handle relative flex items-center justify-between px-3 py-2 border-b border-neutral-800/50 cursor-move select-none">
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className="flex-1 min-w-0">
-                      <div className="truncate text-sm font-medium text-neutral-200">
-                        {title || "Untitled"}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 flex-shrink-0">
                     <Popover>
                       <PopoverTrigger asChild>
                         <button
@@ -346,7 +348,7 @@ export function BlockCard({ block }: BlockCardProps) {
                         </button>
                       </PopoverTrigger>
                       <PopoverContent
-                        align="end"
+                        align="start"
                         className="w-auto space-y-2 bg-neutral-900 border-neutral-800 z-[100]"
                         onMouseDown={(e) => e.stopPropagation()}
                       >
@@ -355,7 +357,7 @@ export function BlockCard({ block }: BlockCardProps) {
                         </div>
                         <div className="flex gap-2">
                           {(
-                            ["slate", "amber", "emerald", "sky", "violet", "rose"] as BlockColor[]
+                            ["dark", "slate", "amber", "emerald", "sky", "violet", "rose"] as BlockColor[]
                           ).map((color) => (
                             <button
                               key={color}
@@ -390,6 +392,14 @@ export function BlockCard({ block }: BlockCardProps) {
                       </PopoverContent>
                     </Popover>
 
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate text-sm font-medium text-neutral-200">
+                        {title || "Untitled"}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button

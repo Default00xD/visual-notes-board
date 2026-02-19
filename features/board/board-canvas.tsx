@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
-import { motion } from "framer-motion";
-import { Plus } from "lucide-react";
+import { useCallback, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { CheckSquare, Folder, Image, Plus, Type } from "lucide-react";
 import { useBoardStore } from "@/store/board-store";
 import { BlockCard } from "@/features/board/block-card";
 import { FolderOverlay } from "@/features/board/folder-overlay";
@@ -28,6 +28,7 @@ const snapToGrid = (value: number): number => {
 export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
   const { currentBoard, blocks, openFolderId, setOpenFolderId, createBlock } =
     useBoardStore();
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   const scopedBlocks = blocks.filter(
     (block) => block.parentBlockId === parentBlockId
@@ -62,51 +63,79 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(148,163,184,0.15)_1px,transparent_0)] [background-size:24px_24px]" />
 
           <div className="relative z-10 h-full w-full">
-            <div className="absolute right-4 top-4 flex flex-col items-end gap-2 z-20">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex cursor-pointer rounded-full border border-neutral-800/50 bg-neutral-900/90 backdrop-blur-sm p-1.5 shadow-lg transition-all hover:border-primary/50"
-                  >
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 text-neutral-300 hover:text-primary hover:bg-transparent"
+            <div className="absolute inset-x-0 bottom-6 z-20 flex items-end justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <AnimatePresence>
+                  {isPaletteOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      transition={{ duration: 0.18 }}
+                      className="flex items-center gap-2 rounded-full bg-neutral-900/90 px-3 py-2 shadow-soft border border-neutral-800/70 backdrop-blur-sm"
                     >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </motion.div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-neutral-900 border-neutral-800 z-50">
-                  <DropdownMenuItem 
-                    onClick={() => handleAddBlock("text")}
-                    className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
-                  >
-                    Text block
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleAddBlock("checklist")}
-                    className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
-                  >
-                    Checklist
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleAddBlock("image")}
-                    className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
-                  >
-                    Image
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleAddBlock("folder")}
-                    className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
-                  >
-                    Folder
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      <motion.button
+                        whileHover={{ scale: 1.06, y: -1 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={() => {
+                          handleAddBlock("text");
+                          setIsPaletteOpen(false);
+                        }}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 hover:bg-primary/80 hover:text-neutral-950 transition-colors"
+                      >
+                        <Type className="h-4 w-4" />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.06, y: -1 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={() => {
+                          handleAddBlock("checklist");
+                          setIsPaletteOpen(false);
+                        }}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 hover:bg-primary/80 hover:text-neutral-950 transition-colors"
+                      >
+                        <CheckSquare className="h-4 w-4" />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.06, y: -1 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={() => {
+                          handleAddBlock("image");
+                          setIsPaletteOpen(false);
+                        }}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 hover:bg-primary/80 hover:text-neutral-950 transition-colors"
+                      >
+                        <Image className="h-4 w-4" />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.06, y: -1 }}
+                        whileTap={{ scale: 0.95 }}
+                        type="button"
+                        onClick={() => {
+                          handleAddBlock("folder");
+                          setIsPaletteOpen(false);
+                        }}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-neutral-800/80 text-neutral-200 hover:bg-primary/80 hover:text-neutral-950 transition-colors"
+                      >
+                        <Folder className="h-4 w-4" />
+                      </motion.button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.08 }}
+                  whileTap={{ scale: 0.94 }}
+                  onClick={() => setIsPaletteOpen((prev) => !prev)}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-neutral-800/70 bg-neutral-900/90 text-neutral-200 shadow-soft backdrop-blur-sm hover:border-primary/70 hover:text-primary"
+                >
+                  <Plus className="h-5 w-5" />
+                </motion.button>
+              </div>
             </div>
 
             {scopedBlocks.map((block) => (

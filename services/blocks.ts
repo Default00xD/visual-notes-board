@@ -12,6 +12,7 @@ export type BlockType =
   | "folder";
 
 export type BlockColor =
+  | "dark"
   | "slate"
   | "amber"
   | "emerald"
@@ -58,7 +59,7 @@ export async function getBlocksForBoard(
       y: block.y,
       width: block.width,
       height: block.height,
-      color: (block.color as BlockColor) ?? "slate",
+      color: (block.color as BlockColor) ?? "dark",
       content: block.content,
       zIndex: block.z_index,
       createdAt: block.created_at

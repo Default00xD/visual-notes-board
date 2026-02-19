@@ -34,13 +34,13 @@ export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
   const isRootFolder = folder.parentBlockId === null;
 
   const containerClasses = isRootFolder
-    ? "relative h-[50vh] w-[50vw] overflow-hidden rounded-2xl bg-neutral-900/80 border border-neutral-800/60 shadow-2xl"
-    : "relative h-full w-full overflow-hidden rounded-2xl bg-neutral-900/70 border border-neutral-800/50 shadow-2xl";
+    ? "relative h-[50vh] w-[50vw] overflow-hidden rounded-2xl border border-neutral-800/70 shadow-2xl"
+    : "relative h-full w-full overflow-hidden rounded-2xl border border-neutral-800/50 shadow-2xl";
 
   const overlayContent = (
     <AnimatePresence>
       <motion.div
-        className={`${isRootFolder ? "fixed inset-0" : "absolute inset-0"} z-[100] flex items-center justify-center bg-neutral-950/60 backdrop-blur-md`}
+        className={`${isRootFolder ? "fixed inset-0" : "absolute inset-0"} z-[100] flex items-center justify-center bg-transparent`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

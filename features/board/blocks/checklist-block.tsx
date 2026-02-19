@@ -82,55 +82,46 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
 
   return (
     <div className="space-y-1.5">
-      <div className="flex items-center justify-between text-[11px] text-slate-400">
-        <span>Checklist</span>
-        <motion.div whileHover={{ scale: 1 }} whileTap={{ scale: 0.95 }}>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 px-1 text-[11px] text-slate-300 hover:text-white hover:bg-slate-700/50"
-            onClick={handleAdd}
-          >
-            + item
-          </Button>
-        </motion.div>
-      </div>
       <div className="space-y-1">
         {items.map((item) => (
           <motion.label
             key={item.id}
-            initial={{ opacity: 0, x: -10 }}
+            initial={{ opacity: 0, x: -6 }}
             animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2 text-[12px] text-slate-300"
+            className="group flex items-center gap-2 rounded-md px-1 py-0.5 text-[12px] text-neutral-200 transition-colors hover:bg-neutral-800/60"
           >
             <input
               type="checkbox"
               checked={item.checked}
               onChange={() => handleToggle(item.id)}
-              className="h-3.5 w-3.5 rounded border-slate-600 bg-slate-800 text-primary focus:ring-primary"
+              className="h-3.5 w-3.5 rounded border-neutral-600 bg-neutral-900 text-primary focus:ring-primary"
             />
             <Input
               value={item.text}
               onChange={(event) =>
                 handleChangeText(item.id, event.target.value)
               }
-              placeholder="Task..."
-              className="h-7 border-none bg-transparent px-0 text-[12px] text-slate-300 placeholder:text-slate-500 focus-visible:ring-0 focus:text-white"
+              placeholder="Новая задача"
+              className={`h-7 border-none bg-transparent px-0 text-[12px] shadow-none placeholder:text-neutral-500 focus-visible:ring-0 ${
+                item.checked
+                  ? "text-neutral-500 line-through"
+                  : "text-neutral-200"
+              }`}
             />
           </motion.label>
         ))}
-        {items.length === 0 && (
-          <motion.button
-            whileHover={{ scale: 1 }}
-            whileTap={{ scale: 0.95 }}
-            type="button"
-            onClick={handleAdd}
-            className="text-[12px] text-primary underline-offset-2 hover:underline"
-          >
-            Add first item
-          </motion.button>
-        )}
+        <motion.button
+          whileHover={{ scale: 1.02, x: 2 }}
+          whileTap={{ scale: 0.97 }}
+          type="button"
+          onClick={handleAdd}
+          className="flex items-center gap-2 px-1 py-1 text-[12px] text-neutral-400 transition-colors hover:text-primary"
+        >
+          <span className="flex h-4 w-4 items-center justify-center rounded-full border border-neutral-600 text-[11px]">
+            +
+          </span>
+          <span>Добавить пункт</span>
+        </motion.button>
       </div>
     </div>
   );

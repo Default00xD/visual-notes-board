@@ -88,7 +88,7 @@ export function AppShell({ children }: AppShellProps) {
 
           <div className="flex items-center justify-center">
             <span className="text-[11px] font-medium tracking-[0.18em] uppercase text-neutral-500">
-              version 1.0
+              version 1.0.1
             </span>
           </div>
 
