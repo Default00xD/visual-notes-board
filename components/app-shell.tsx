@@ -68,22 +68,31 @@ export function AppShell({ children }: AppShellProps) {
         transition={{ duration: 0.3 }}
         className="sticky top-0 z-40 border-b border-neutral-800/50 bg-neutral-950/80 backdrop-blur-md w-full"
       >
-        <div className="flex h-14 items-center justify-between px-6 w-full">
-          <Link
-            href="/app"
-            className="flex items-center gap-2 text-sm font-semibold tracking-tight transition-all hover:opacity-80"
-            onClick={() => console.log("[AppShell] Logo clicked - navigating to /app")}
-          >
-            <motion.span
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              whileTap={{ scale: 0.9 }}
-              className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-xs text-primary-foreground shadow-lg"
+        <div className="grid h-14 w-full grid-cols-[auto,1fr,auto] items-center px-6">
+          <div className="flex items-center">
+            <Link
+              href="/app"
+              className="flex items-center gap-2 text-sm font-semibold tracking-tight transition-all hover:opacity-80"
+              onClick={() => console.log("[AppShell] Logo clicked - navigating to /app")}
             >
-              V
-            </motion.span>
-            <span className="text-neutral-100">Visual Notes Board</span>
-          </Link>
-          <div className="flex items-center gap-3">
+              <motion.span
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                whileTap={{ scale: 0.9 }}
+                className="inline-flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-xs text-primary-foreground shadow-lg"
+              >
+                V
+              </motion.span>
+              <span className="text-neutral-100">Visual Notes Board</span>
+            </Link>
+          </div>
+
+          <div className="flex items-center justify-center">
+            <span className="text-[11px] font-medium tracking-[0.18em] uppercase text-neutral-500">
+              version 1.0
+            </span>
+          </div>
+
+          <div className="flex items-center justify-end gap-3">
             {hasUnsavedChanges && (
               <span className="text-xs text-amber-400">Unsaved changes</span>
             )}

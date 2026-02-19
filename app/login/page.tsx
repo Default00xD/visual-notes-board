@@ -15,20 +15,20 @@ export default async function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center px-4">
-      <Card className="w-full max-w-md smooth-shadow border-0 bg-white/90 backdrop-blur">
+    <div className="flex min-h-[calc(100vh-3.5rem)] items-center justify-center bg-gradient-to-b from-neutral-950 via-neutral-900 to-neutral-950 px-4">
+      <Card className="w-full max-w-md border border-neutral-800/70 bg-neutral-900/80 backdrop-blur-xl shadow-[0_0_80px_rgba(56,189,248,0.25)]">
         <CardHeader>
-          <CardTitle className="text-xl font-semibold tracking-tight">
+          <CardTitle className="text-xl font-semibold tracking-tight text-neutral-50">
             Visual Notes Board
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-neutral-400">
             Войдите через Google, чтобы создать свою визуальную доску и
             организовать заметки в современном SaaS-интерфейсе.
           </p>
           <GoogleLoginButton />
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[11px] text-neutral-500">
             Авторизация и хранение данных выполняются через Supabase
             (PostgreSQL + Auth). В будущем будет добавлена подписочная модель
             (free / pro).

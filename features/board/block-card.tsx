@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Trash2 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Json } from "@/types/database";
 import {
@@ -32,7 +32,7 @@ interface BlockCardProps {
   block: BlockDto;
 }
 
-const GRID_SIZE = 20;
+const GRID_SIZE = 50;
 
 // Snap value to nearest multiple of grid size
 const snapToGrid = (value: number): number => {
@@ -234,6 +234,7 @@ export function BlockCard({ block }: BlockCardProps) {
   const colorClass = COLOR_MAP[block.color] ?? COLOR_MAP.slate;
   const colorDotClass = COLOR_DOT_MAP[block.color] ?? COLOR_DOT_MAP.slate;
   const isSelected = selectedBlockId === block.id;
+  const isImage = block.type === "image";
 
   const displayWidth = snapSize?.width ?? block.width;
   const displayHeight = snapSize?.height ?? block.height;
@@ -281,131 +282,190 @@ export function BlockCard({ block }: BlockCardProps) {
             style={{
               transition: snapSize ? "width 0.3s ease-out, height 0.3s ease-out" : undefined
             }}
-            className={`group flex flex-col rounded-xl border shadow-xl backdrop-blur-sm transition-all duration-200 ${colorClass} ${
+            className={`group flex flex-col rounded-xl border shadow-xl backdrop-blur-sm transition-all duration-200 ${
+              isImage ? "bg-transparent border-none shadow-none" : colorClass
+            } ${
               isSelected
                 ? "ring-2 ring-primary shadow-2xl"
                 : "ring-0 hover:ring-1 hover:ring-neutral-700/50"
             } ${isDragging ? "opacity-90" : ""}`}
           >
-              {/* Header (drag handle) */}
-              <div className="drag-handle relative flex items-center justify-between px-3 py-2 border-b border-neutral-800/50 cursor-move select-none">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <div className="flex-1 min-w-0">
-                    <div className="truncate text-sm font-medium text-neutral-200">
-                      {title || "Untitled"}
+            {isImage ? (
+              <div className="relative flex h-full w-full overflow-hidden rounded-xl">
+                {/* Drag surface under all elements */}
+                <div className="drag-surface absolute inset-0 z-0 cursor-move" />
+                <div className="relative z-10 h-full w-full">
+                  <BlockRenderer block={block} />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      console.log("[BlockCard] Image delete button clicked", { blockId: block.id });
+                      void deleteBlock(block.id)
+                        .then(() => {
+                          console.log("[BlockCard] Image delete completed", { blockId: block.id });
+                        })
+                        .catch((error) => {
+                          console.error("[BlockCard] Image delete failed", {
+                            blockId: block.id,
+                            error
+                          });
+                        });
+                    }}
+                    className="absolute right-2 top-2 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-neutral-950/80 text-neutral-300 opacity-0 shadow-lg shadow-black/40 transition-all hover:bg-red-600/90 hover:text-white group-hover:opacity-100"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Header (drag handle) */}
+                <div className="drag-handle relative flex items-center justify-between px-3 py-2 border-b border-neutral-800/50 cursor-move select-none">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate text-sm font-medium text-neutral-200">
+                        {title || "Untitled"}
+                      </div>
                     </div>
+                  </div>
+
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="h-5 w-5 rounded-full border border-neutral-700/50 shadow-sm transition-all hover:border-primary/50"
+                          style={{ backgroundColor: "transparent" }}
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span
+                            className={`block h-full w-full rounded-full ${colorDotClass}`}
+                          />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="end"
+                        className="w-auto space-y-2 bg-neutral-900 border-neutral-800 z-[100]"
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        <div className="text-[11px] font-medium text-neutral-300">
+                          Block color
+                        </div>
+                        <div className="flex gap-2">
+                          {(
+                            ["slate", "amber", "emerald", "sky", "violet", "rose"] as BlockColor[]
+                          ).map((color) => (
+                            <button
+                              key={color}
+                              type="button"
+                              onClick={() => {
+                                console.log("[BlockCard] Color change - start", {
+                                  blockId: block.id,
+                                  newColor: color,
+                                  oldColor: block.color
+                                });
+                                void changeBlockColor({ id: block.id, color })
+                                  .then(() => {
+                                    console.log("[BlockCard] Color change - completed", {
+                                      blockId: block.id,
+                                      color
+                                    });
+                                  })
+                                  .catch((error) => {
+                                    console.error("[BlockCard] Color change - failed", {
+                                      blockId: block.id,
+                                      color,
+                                      error
+                                    });
+                                  });
+                              }}
+                              className={`h-6 w-6 rounded-full border border-neutral-700/50 shadow-sm transition-all hover:border-primary/50 ${
+                                COLOR_DOT_MAP[color]
+                              } ${block.color === color ? "ring-2 ring-primary" : ""}`}
+                            />
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6 text-neutral-400 opacity-0 transition-all group-hover:opacity-100 hover:text-neutral-200 hover:bg-neutral-800/50"
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                          }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="bg-neutral-900 border-neutral-800 z-[100]"
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            console.log("[BlockCard] Rename menu item clicked", {
+                              blockId: block.id,
+                              currentTitle: title
+                            });
+                            e.stopPropagation();
+                            setRenameValue(title);
+                            setRenameOpen(true);
+                            console.log("[BlockCard] Rename dialog opened", { blockId: block.id });
+                          }}
+                          className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
+                        >
+                          Rename…
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            console.log("[BlockCard] Delete menu item clicked", {
+                              blockId: block.id
+                            });
+                            e.stopPropagation();
+                            void deleteBlock(block.id)
+                              .then(() => {
+                                console.log("[BlockCard] Delete completed", {
+                                  blockId: block.id
+                                });
+                              })
+                              .catch((error) => {
+                                console.error("[BlockCard] Delete failed", {
+                                  blockId: block.id,
+                                  error
+                                });
+                              });
+                          }}
+                          className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
+                        >
+                          Delete block
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        className="h-5 w-5 rounded-full border border-neutral-700/50 shadow-sm transition-all hover:border-primary/50"
-                        style={{ backgroundColor: "transparent" }}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <span
-                          className={`block h-full w-full rounded-full ${colorDotClass}`}
-                        />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      align="end"
-                      className="w-auto space-y-2 bg-neutral-900 border-neutral-800 z-[100]"
-                      onMouseDown={(e) => e.stopPropagation()}
-                    >
-                      <div className="text-[11px] font-medium text-neutral-300">
-                        Block color
-                      </div>
-                      <div className="flex gap-2">
-                        {(
-                          ["slate", "amber", "emerald", "sky", "violet", "rose"] as BlockColor[]
-                        ).map((color) => (
-                          <button
-                            key={color}
-                            type="button"
-                            onClick={() => {
-                              console.log("[BlockCard] Color change - start", { blockId: block.id, newColor: color, oldColor: block.color });
-                              void changeBlockColor({ id: block.id, color }).then(() => {
-                                console.log("[BlockCard] Color change - completed", { blockId: block.id, color });
-                              }).catch((error) => {
-                                console.error("[BlockCard] Color change - failed", { blockId: block.id, color, error });
-                              });
-                            }}
-                            className={`h-6 w-6 rounded-full border border-neutral-700/50 shadow-sm transition-all hover:border-primary/50 ${
-                              COLOR_DOT_MAP[color]
-                            } ${block.color === color ? "ring-2 ring-primary" : ""}`}
-                          />
-                        ))}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6 text-neutral-400 opacity-0 transition-all group-hover:opacity-100 hover:text-neutral-200 hover:bg-neutral-800/50"
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                      >
-                        <MoreVertical className="h-3.5 w-3.5" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="end"
-                      className="bg-neutral-900 border-neutral-800 z-[100]"
-                      onMouseDown={(e) => e.stopPropagation()}
-                    >
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          console.log("[BlockCard] Rename menu item clicked", { blockId: block.id, currentTitle: title });
-                          e.stopPropagation();
-                          setRenameValue(title);
-                          setRenameOpen(true);
-                          console.log("[BlockCard] Rename dialog opened", { blockId: block.id });
-                        }}
-                        className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
-                      >
-                        Rename…
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          console.log("[BlockCard] Delete menu item clicked", { blockId: block.id });
-                          e.stopPropagation();
-                          void deleteBlock(block.id).then(() => {
-                            console.log("[BlockCard] Delete completed", { blockId: block.id });
-                          }).catch((error) => {
-                            console.error("[BlockCard] Delete failed", { blockId: block.id, error });
-                          });
-                        }}
-                        className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
-                      >
-                        Delete block
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                {/* Body */}
+                <div className="relative flex-1 overflow-hidden">
+                  {/* Drag surface under all elements */}
+                  <div className="drag-surface absolute inset-0 z-0 cursor-move" />
+                  <div className="relative z-10 h-full px-3 pb-3 pt-2 text-xs overflow-hidden">
+                    <BlockRenderer block={block} />
+                  </div>
                 </div>
-              </div>
-
-              {/* Body */}
-              <div className="relative flex-1 overflow-hidden">
-                {/* Drag surface under all elements */}
-                <div className="drag-surface absolute inset-0 z-0 cursor-move" />
-                <div className="relative z-10 h-full px-3 pb-3 pt-2 text-xs overflow-hidden">
-                  <BlockRenderer block={block} />
-                </div>
-              </div>
-            </Resizable>
+              </>
+            )}
+          </Resizable>
         </motion.div>
 
         <Dialog open={renameOpen} onOpenChange={setRenameOpen}>

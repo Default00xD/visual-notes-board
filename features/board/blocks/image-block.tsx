@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Json } from "@/types/database";
 import type { BlockDto } from "@/services/blocks";
 import { useBoardStore } from "@/store/board-store";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
 interface ImageContent {
@@ -26,6 +24,7 @@ export function ImageBlock({ block }: ImageBlockProps) {
   const initial = (block.content as ImageContent | null) ?? null;
   const [content, setContent] = useState<ImageContent | null>(initial);
   const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     setContent(initial);
@@ -83,55 +82,44 @@ export function ImageBlock({ block }: ImageBlockProps) {
     }
   };
 
-  const handleCaptionBlur = (event: React.FocusEvent<HTMLInputElement>) => {
-    const caption = event.target.value;
-    console.log("[ImageBlock] Caption blur - saving", { blockId: block.id, captionLength: caption.length });
-    if (!content) {
-      console.log("[ImageBlock] Caption blur - no content, skipping", { blockId: block.id });
-      return;
-    }
-    persist({
-      ...content,
-      caption
-    });
-    console.log("[ImageBlock] Caption blur - saved", { blockId: block.id });
+  const handleClick = () => {
+    if (isUploading) return;
+    fileInputRef.current?.click();
   };
 
   return (
-    <div className="flex h-full flex-col gap-2">
-      <div className="flex items-center justify-between text-[11px] text-slate-400">
-        <span>Image</span>
-        <label className="inline-flex cursor-pointer items-center rounded-full bg-slate-700/50 px-2 py-0.5 text-[10px] font-medium text-slate-300 hover:bg-slate-700 transition-colors">
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileChange}
-          />
-          {isUploading ? "Uploading…" : "Upload"}
-        </label>
-      </div>
-      <div className="flex-1 overflow-hidden rounded-md bg-slate-900/50 border border-slate-700/50">
-        {content?.url ? (
-          <motion.img
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            src={content.url}
-            alt={content.caption ?? "Image"}
-            className="h-full w-full object-contain"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-[11px] text-slate-500">
-            No image yet
-          </div>
-        )}
-      </div>
-      <Input
-        placeholder="Caption..."
-        defaultValue={content?.caption ?? ""}
-        onBlur={handleCaptionBlur}
-        className="h-7 border-slate-700/50 bg-slate-800/50 text-slate-200 text-[11px] placeholder:text-slate-500 focus-visible:ring-primary focus-visible:border-primary"
+    <div
+      className="relative h-full w-full overflow-hidden rounded-xl bg-neutral-900/40"
+      onClick={handleClick}
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
       />
+      {content?.url ? (
+        <motion.img
+          key={content.url}
+          initial={{ opacity: 0.4, scale: 1.02 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.25 }}
+          src={content.url}
+          alt={content.caption ?? "Image"}
+          className="h-full w-full object-contain cursor-pointer"
+        />
+      ) : (
+        <div className="flex h-full w-full cursor-pointer items-center justify-center text-[11px] text-neutral-500">
+          Нажмите, чтобы загрузить изображение
+        </div>
+      )}
+
+      {isUploading && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-neutral-950/50 text-[11px] text-neutral-200">
+          Загрузка...
+        </div>
+      )}
     </div>
   );
 }

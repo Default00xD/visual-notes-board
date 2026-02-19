@@ -77,9 +77,16 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
     const GRID_SIZE = 20;
     const snapToGrid = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE;
-    
+
     const width = snapToGrid(260);
     const height = snapToGrid(160);
+
+    // New blocks should appear above others
+    const maxZ = blocks.reduce(
+      (acc, block) => (block.zIndex > acc ? block.zIndex : acc),
+      0
+    );
+    const nextZ = maxZ + 1;
 
     const payload = {
       boardId: currentBoard.id,
@@ -90,7 +97,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       width,
       height,
       color: "slate" as BlockColor,
-      content: {} as Json
+      content: {} as Json,
+      zIndex: nextZ
     };
 
     console.log("[Store] createBlock - sending request", payload);
@@ -108,12 +116,18 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
 
     const created = (await response.json()) as BlockDto;
-    console.log("[Store] createBlock - block created", { blockId: created.id, type: created.type });
+    console.log("[Store] createBlock - block created", { blockId: created.id, type: created.type, zIndex: created.zIndex });
+
+    const withZ: BlockDto = {
+      ...created,
+      zIndex: created.zIndex ?? nextZ
+    };
 
     set({
-      blocks: [...blocks, created]
+      blocks: [...blocks, withZ],
+      hasUnsavedChanges: true
     });
-    console.log("[Store] createBlock - state updated", { totalBlocks: blocks.length + 1 });
+    console.log("[Store] createBlock - state updated", { totalBlocks: blocks.length + 1, zIndex: withZ.zIndex });
   },
   updateBlockPositionAndSize: async ({ id, x, y, width, height }) => {
     console.log("[Store] updateBlockPositionAndSize - start", { id, x, y, width, height });

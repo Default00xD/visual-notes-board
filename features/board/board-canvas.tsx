@@ -94,18 +94,6 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
                     Checklist
                   </DropdownMenuItem>
                   <DropdownMenuItem 
-                    onClick={() => handleAddBlock("list")}
-                    className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
-                  >
-                    List
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleAddBlock("likes")}
-                    className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
-                  >
-                    Likes
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
                     onClick={() => handleAddBlock("image")}
                     className="text-neutral-300 hover:bg-neutral-800 hover:text-white focus:bg-neutral-800 focus:text-white"
                   >
@@ -140,16 +128,21 @@ export function BoardCanvas({ parentBlockId }: BoardCanvasProps) {
         </div>
       </div>
 
-      {openFolderId && parentBlockId === null && (
-        <FolderOverlay
-          folderId={openFolderId}
-          onClose={() => {
-            console.log("[BoardCanvas] Folder overlay - close clicked", { folderId: openFolderId });
-            setOpenFolderId(null);
-            console.log("[BoardCanvas] Folder overlay - closed", { folderId: openFolderId });
-          }}
-        />
-      )}
+      {openFolderId && (() => {
+        const folder = blocks.find((b) => b.id === openFolderId);
+        if (!folder || folder.parentBlockId !== parentBlockId) return null;
+
+        return (
+          <FolderOverlay
+            folderId={openFolderId}
+            onClose={() => {
+              console.log("[BoardCanvas] Folder overlay - close clicked", { folderId: openFolderId });
+              setOpenFolderId(null);
+              console.log("[BoardCanvas] Folder overlay - closed", { folderId: openFolderId });
+            }}
+          />
+        );
+      })()}
     </>
   );
 }

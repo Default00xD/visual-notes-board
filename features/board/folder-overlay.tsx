@@ -31,11 +31,16 @@ export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
 
   const title =
     (folder.content as { title?: string } | null)?.title ?? "Folder";
+  const isRootFolder = folder.parentBlockId === null;
+
+  const containerClasses = isRootFolder
+    ? "relative h-[50vh] w-[50vw] overflow-hidden rounded-2xl bg-neutral-900/80 border border-neutral-800/60 shadow-2xl"
+    : "relative h-full w-full overflow-hidden rounded-2xl bg-neutral-900/70 border border-neutral-800/50 shadow-2xl";
 
   const overlayContent = (
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-neutral-950/80 backdrop-blur-md"
+        className={`${isRootFolder ? "fixed inset-0" : "absolute inset-0"} z-[100] flex items-center justify-center bg-neutral-950/60 backdrop-blur-md`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -48,14 +53,14 @@ export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
         }}
       >
         <motion.div
-          className="relative h-[85vh] w-[90vw] max-w-6xl overflow-hidden rounded-2xl bg-neutral-950 border border-neutral-800/50 shadow-2xl"
-          initial={{ scale: 0.9, y: 20, opacity: 0 }}
+          className={containerClasses}
+          initial={{ scale: 0.8, y: 10, opacity: 0 }}
           animate={{ scale: 1, y: 0, opacity: 1 }}
-          exit={{ scale: 0.95, y: 10, opacity: 0 }}
+          exit={{ scale: 0.95, y: 8, opacity: 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between border-b border-neutral-800/50 bg-neutral-900/50 px-6 py-3 backdrop-blur-sm">
+          <div className="flex items-center justify-between border-b border-neutral-800/50 bg-neutral-900/60 px-6 py-3 backdrop-blur-sm">
             <div className="flex flex-col">
               <span className="font-semibold text-neutral-100 text-lg">{title}</span>
               <span className="text-[11px] text-neutral-400 mt-0.5">
@@ -80,7 +85,7 @@ export function FolderOverlay({ folderId, onClose }: FolderOverlayProps) {
               </Button>
             </motion.div>
           </div>
-          <div className="h-[calc(85vh-4rem)] w-full">
+          <div className={isRootFolder ? "h-[calc(50vh-3rem)] w-full" : "h-[calc(100%-3rem)] w-full"}>
             <BoardCanvas parentBlockId={folderId} />
           </div>
         </motion.div>
