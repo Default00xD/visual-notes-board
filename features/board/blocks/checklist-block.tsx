@@ -174,10 +174,10 @@ export function ChecklistBlock({ block }: ChecklistBlockProps) {
           onClick={handleAdd}
           className="flex items-center gap-2 px-1 py-1 text-[14px] text-neutral-400 transition-colors hover:text-primary"
         >
-          <span className="flex h-4 w-4 items-center justify-center rounded-full border border-neutral-600 text-[11px]">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full border border-neutral-600 text-[11px]">
             +
           </span>
-          <span>Добавить пункт</span>
+          
         </motion.button>
       </div>
     </div>
