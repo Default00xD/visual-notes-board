@@ -382,7 +382,7 @@ export function BlockCard({ block }: BlockCardProps) {
               isImage ? "bg-transparent border-none shadow-none" : colorClass
             } ${
               isSelected
-                ? "ring-2 ring-primary shadow-2xl"
+                ? "ring-0 ring-primary shadow-2xl"
                 : "ring-0 hover:ring-1 hover:ring-neutral-700/50"
             } ${isDragging ? "opacity-90" : ""} focus-visible:ring-0`}
           >
