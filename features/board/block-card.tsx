@@ -311,7 +311,7 @@ export function BlockCard({ block }: BlockCardProps) {
 
   return (
     <>
-      {/* Preview shadow showing final snapped position/size */}
+      {/* Preview shadow showing final snapped position/size
       {(isDragging || isResizing) && (previewPos || previewSize) && (
         <div
           style={{
@@ -325,7 +325,7 @@ export function BlockCard({ block }: BlockCardProps) {
           }}
           className="rounded-xl border-2 border-dashed border-primary/40 bg-primary/5"
         />
-      )}
+      )} */}
     <Draggable
       nodeRef={nodeRef}
       position={snapPos ?? pos}
